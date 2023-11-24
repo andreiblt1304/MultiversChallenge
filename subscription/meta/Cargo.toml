@@ -1,0 +1,10 @@
+[package]
+name = "subscription-meta"
+version = "0.0.0"
+edition = "2021"
+publish = false
+[dependencies.subscription]
+path = ".."
+
+[dependencies.multiversx-sc-meta]
+version = "0.44.0"
