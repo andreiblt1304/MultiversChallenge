@@ -25,7 +25,7 @@ pub trait Erc1155 {
         self.is_fungible(&type_id).set(is_fungible);
 
         if !is_fungible {
-            self.set_owner_for_tokens(&type_id, &big_uint_one, &initial_supply, &creator);
+            self.set_owner_for_token_range(&type_id, &big_uint_one, &initial_supply, &creator);
             self.last_valid_nft_type_id(&type_id)
                 .set(&initial_supply);
         }
@@ -99,7 +99,13 @@ pub trait Erc1155 {
         self.increase_balance(&creator, &type_id, &amount);
 
         if !self.is_fungible(&type_id).get() {
-            // assign NFT to user
+            let last_valid_id = self.last_valid_nft_type_id(&type_id).get();
+            let new_nft_first_id = &last_valid_id + 1u32;
+            let new_nft_last_id = last_valid_id + &amount;
+
+            self.set_owner_for_token_range(&type_id, &new_nft_first_id, &new_nft_last_id, &creator);
+
+            self.last_valid_nft_type_id(&type_id).set(&new_nft_last_id);
         }
     }
 
@@ -131,7 +137,7 @@ pub trait Erc1155 {
 
     }
 
-    fn set_owner_for_tokens(
+    fn set_owner_for_token_range(
         &self,
         type_id: &BigUint,
         start: &BigUint,

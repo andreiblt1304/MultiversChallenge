@@ -1,0 +1,72 @@
+{
+    "name": "mint nonfungible token",
+    "steps": [
+        {
+            "step": "externalSteps",
+            "path": "erc_1155-create-nonfungible.scen.json"
+        },
+        {
+            "step": "scCall",
+            "id": "mint-nonfungible",
+            "tx": {
+                "from": "address:creator",
+                "to": "sc:erc_1155",
+                "function": "mint",
+                "arguments": [
+                    "1",
+                    "3"
+                ],
+                "gasLimit": "5,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "out": [],
+                "status": "0",
+                "message": "",
+                "logs": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "checkState",
+            "accounts": {
+                "address:owner": {
+                    "nonce": "1",
+                    "balance": "0",
+                    "storage": {}
+                },
+                "address:creator": {
+                    "nonce": "2",
+                    "balance": "0",
+                    "storage": {}
+                },
+                "sc:erc_1155": {
+                    "nonce": "0",
+                    "balance": "0",
+                    "storage": {
+                        "str:tokenTypeCreator|biguint:1": "address:creator",
+                        "str:isFungible|biguint:1": "false",
+                        "str:balanceOf|address:creator|str:.node|u32:1": "0",
+                        "str:lastValidNftTypeId|biguint:1": "8",
+                        "str:lastValidTypeId": "1",
+                        "str:tokenOwner|biguint:1|biguint:1": "address:creator",
+                        "str:tokenOwner|biguint:1|biguint:2": "address:creator",
+                        "str:tokenOwner|biguint:1|biguint:3": "address:creator",
+                        "str:tokenOwner|biguint:1|biguint:4": "address:creator",
+                        "str:tokenOwner|biguint:1|biguint:5": "address:creator",
+                        "str:tokenOwner|biguint:1|biguint:6": "address:creator",
+                        "str:tokenOwner|biguint:1|biguint:7": "address:creator",
+                        "str:tokenOwner|biguint:1|biguint:8": "address:creator",
+                        "str:balanceOf|address:creator|str:.mapped|biguint:1": "8",
+                        "str:balanceOf|address:creator|str:.value|u32:1": "1",
+                        "str:balanceOf|address:creator|str:.info": "u32:1|u32:1|u32:1|u32:1",
+                        "str:balanceOf|address:creator|str:.node_links|u32:1": "0x0000000000000000",
+                        "str:balanceOf|address:creator|str:.node_id|biguint:1": "1"
+                    },
+                    "code": "file:../output/erc1155.wasm"
+                }
+            }            
+        }
+    ]
+}
