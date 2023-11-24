@@ -1,0 +1,81 @@
+{
+    "name": "transfer fungible token ok",
+    "steps": [
+        {
+            "step": "externalSteps",
+            "path": "erc_1155-create-fungible.scen.json"
+        },
+        {
+            "step": "setState",
+            "accounts": {
+                "address:creator": {
+                    "nonce": "0",
+                    "balance": "0"
+                }
+            }
+        },
+        {
+            "step": "scCall",
+            "id": "transfer-fungible-token-ok",
+            "tx": {
+                "from": "address:creator",
+                "to": "sc:erc_1155",
+                "function": "safe_transfer_from",
+                "arguments": [
+                    "address:creator",
+                    "address:user1",
+                    "1",
+                    "100",
+                    "str:mockData"
+                ],
+                "gasLimit": "5,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "out": [],
+                "status": "0",
+                "message": "",
+                "logs": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "checkState",
+            "accounts": {
+                "address:owner": {
+                    "nonce": "1",
+                    "balance": "0",
+                    "storage": {}
+                },
+                "address:creator": {
+                    "nonce": "1",
+                    "balance": "0",
+                    "storage": {}
+                },
+                "sc:erc_1155": {
+                    "nonce": "0",
+                    "balance": "0",
+                    "storage": {
+                        "str:tokenTypeCreator|biguint:1": "address:creator",
+                        "str:isFungible|biguint:1": "true",
+                        "str:balanceOf|address:creator|str:.node|u32:1": "0",
+                        "str:balanceOf|address:creator|str:.mapped|biguint:1": "900",
+                        "str:lastValidTypeId": "1",
+                        "str:balanceOf|address:creator|str:.value|u32:1": "1",
+                        "str:balanceOf|address:creator|str:.info": "u32:1|u32:1|u32:1|u32:1",
+                        "str:balanceOf|address:creator|str:.node_links|u32:1": "0x0000000000000000",
+                        "str:balanceOf|address:creator|str:.node_id|biguint:1": "1",
+                        "str:balanceOf|address:user1|str:.node_id|biguint:1": "1",
+                        "str:balanceOf|address:user1|str:.mapped|biguint:1": "100",
+                        "str:balanceOf|address:user1|str:.info": "u32:1|u32:1|u32:1|u32:1",
+                        "str:balanceOf|address:user1|str:.value|u32:1": "1",
+                        "str:balanceOf|address:user1|str:.value|u32:2": "",
+                        "str:balanceOf|address:user1|str:.node_links|u32:1": "0x0000000000000000"
+                    },
+                    "code": "file:../output/erc1155.wasm"
+                }
+            }
+        }
+    ]
+}

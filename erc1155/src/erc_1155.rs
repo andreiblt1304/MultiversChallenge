@@ -35,7 +35,6 @@ pub trait Erc1155 {
         type_id
     }
 
-    //transfer ESDT type token
     #[endpoint]
     fn safe_transfer_from(
         &self, 
@@ -49,6 +48,10 @@ pub trait Erc1155 {
 
         require!(!to.is_zero(), "Tokens can't be trasfered to the zero address");
         require!(self.is_valid_type_id(&type_id), "Token id is invalid");
+        require!(
+            caller == from || self.has_permission(&caller, &from).get(),
+            "Caller has no permissions to transfer tokens from address"
+        );
 
         if self.is_fungible(&type_id).get() {
             self.safe_transfer_from_fungible(from, to, type_id, value, data);
@@ -69,9 +72,9 @@ pub trait Erc1155 {
         self.try_balance_fungible(&from, &type_id, &amount);
 
         if self.blockchain().is_smart_contract(&to) {
-            self.execute_async_call_single_transfer(from, to, type_id, amount, data);
+            self.execute_call_single_transfer(from, to, type_id, amount, data);
         } else {
-            self.increase_balance(&to, &type_id, &amount);
+            self.modify_balance_after_transfer(&from, &to, &type_id, &amount);
         }
     }
 
@@ -125,7 +128,7 @@ pub trait Erc1155 {
         self.decrease_balance(&caller, &type_id, &amount);
     }
 
-    fn execute_async_call_single_transfer(
+    fn execute_call_single_transfer(
         &self,
         from: ManagedAddress,
         to: ManagedAddress,
@@ -133,8 +136,23 @@ pub trait Erc1155 {
         amount: BigUint,
         data: &ManagedBuffer,
     ) {
-        let caller = self.blockchain().get_caller();
+        self.modify_balance_after_transfer(&from, &to, &type_id, &amount);
 
+        if !self.is_fungible(&type_id).get() {
+            self.token_owner(&type_id, &BigUint::from(1u32));
+        }
+
+    }
+
+    fn modify_balance_after_transfer(
+        &self,
+        from: &ManagedAddress,
+        to: &ManagedAddress,
+        type_id: &BigUint,
+        amount: &BigUint
+    ) {
+        self.increase_balance(to, type_id, amount);
+        self.decrease_balance(from, type_id, amount);
     }
 
     fn set_owner_for_token_range(
@@ -166,6 +184,11 @@ pub trait Erc1155 {
                             .get(type_id)
                             .unwrap_or_default();
 
+        require!(
+            &balance >= amount,
+            "Balance has to be at greater or equal than the amount sent"
+        );
+
         balance -= amount;
         self.set_balance(owner, type_id, &balance);
     }
@@ -191,7 +214,7 @@ pub trait Erc1155 {
     }
 
     fn is_valid_type_id(&self, type_id: &BigUint) -> bool {
-        type_id > &0 && type_id < &self.last_valid_type_id().get()
+        type_id > &0 && type_id <= &self.last_valid_type_id().get()
     }
 
     #[view(getTokenOwner)]
@@ -209,9 +232,13 @@ pub trait Erc1155 {
     #[storage_mapper("tokenTypeCreator")]
     fn token_type_creator(&self, type_id: &BigUint) -> SingleValueMapper<ManagedAddress>;
 
+    #[view(hasPermission)]
+    #[storage_mapper("hasPermission")]
+    fn has_permission(&self, operator: &ManagedAddress, owner: &ManagedAddress) -> SingleValueMapper<bool>;
+
     #[storage_mapper("lastValidTypeId")]
     fn last_valid_type_id(&self) -> SingleValueMapper<BigUint>;
-
+    
     #[storage_mapper("lastValidNftTypeId")]
     fn last_valid_nft_type_id(&self, type_id: &BigUint) -> SingleValueMapper<BigUint>;
 }
