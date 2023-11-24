@@ -25,7 +25,9 @@ pub trait Erc1155 {
         self.is_fungible(&type_id).set(is_fungible);
 
         if !is_fungible {
-            //set owner for NFT
+            self.set_owner_for_tokens(&type_id, &big_uint_one, &initial_supply, &creator);
+            self.last_valid_nft_type_id(&type_id)
+                .set(&initial_supply);
         }
 
         self.last_valid_type_id().set(&type_id);
@@ -129,6 +131,22 @@ pub trait Erc1155 {
 
     }
 
+    fn set_owner_for_tokens(
+        &self,
+        type_id: &BigUint,
+        start: &BigUint,
+        end: &BigUint,
+        owner: &ManagedAddress
+    ) {
+        let big_uint_one = BigUint::from(1u32);
+        let mut nft_id = start.clone();
+
+        while &nft_id <= end {
+            self.token_owner(type_id, &nft_id).set(owner);
+            nft_id += &big_uint_one;
+        }
+    }
+
     fn increase_balance(&self, owner: &ManagedAddress, type_id: &BigUint, amount: &BigUint) {
         let mut balance = self.get_balance_mapper(owner)
             .get(type_id)
@@ -187,4 +205,7 @@ pub trait Erc1155 {
 
     #[storage_mapper("lastValidTypeId")]
     fn last_valid_type_id(&self) -> SingleValueMapper<BigUint>;
+
+    #[storage_mapper("lastValidNftTypeId")]
+    fn last_valid_nft_type_id(&self, type_id: &BigUint) -> SingleValueMapper<BigUint>;
 }
