@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                            9
+// Endpoints:                           11
 // Async Callback (empty):               1
-// Total number of exported functions:  11
+// Total number of exported functions:  13
 
 #![no_std]
 
@@ -25,6 +25,8 @@ multiversx_sc_wasm_adapter::endpoints! {
         createToken => create_token
         safe_transfer_from => safe_transfer_from
         safe_transfer_from_fungible => safe_transfer_from_fungible
+        safe_transfer_from_non_fungible => safe_transfer_from_non_fungible
+        batch_transfer_from => batch_transfer_from
         mint => mint
         burn => burn
         getTokenOwner => token_owner

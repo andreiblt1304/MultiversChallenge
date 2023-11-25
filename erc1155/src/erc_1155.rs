@@ -4,6 +4,8 @@
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
+use multiversx_sc::types::heap::Vec;
+
 #[multiversx_sc::contract]
 pub trait Erc1155 {
     #[init]
@@ -56,7 +58,7 @@ pub trait Erc1155 {
         if self.is_fungible(&type_id).get() {
             self.safe_transfer_from_fungible(from, to, type_id, value, data);
         } else {
-            //self.safe_transfer_from_non_fungible(&from, &to, type_id, value, data);
+            self.safe_transfer_from_non_fungible(from, to, type_id, value, data);
         }
     }
 
@@ -72,23 +74,70 @@ pub trait Erc1155 {
         self.try_balance_fungible(&from, &type_id, &amount);
 
         if self.blockchain().is_smart_contract(&to) {
-            self.execute_call_single_transfer(from, to, type_id, amount, data);
+            // TODO maybe add some async call and callback
+            self.execute_call_fungible_single_transfer(from, to, type_id, amount, data);
         } else {
             self.modify_balance_after_transfer(&from, &to, &type_id, &amount);
         }
     }
 
-    // #[endpoint]
-    // fn safe_transfer_from_non_fungible(
-    //     &self,
-    //     from: &ManagedAddress,
-    //     to: &ManagedAddress,
-    //     type_id: BigUint,
-    //     value: BigUint,
-    //     data: &ManagedBuffer
-    // ) {
+    #[endpoint]
+    fn safe_transfer_from_non_fungible(
+        &self,
+        from: ManagedAddress,
+        to: ManagedAddress,
+        type_id: BigUint,
+        nft_id: BigUint,
+        data: &ManagedBuffer
+    ) {
+        self.try_balance_nonfungible(&from, &type_id, &nft_id);
+        self.execute_call_nonfungible_single_transfer(to, type_id, nft_id);
+    }
 
-    // }
+    #[endpoint]
+    fn batch_transfer_from(
+        &self,
+        from: ManagedAddress,
+        to: ManagedAddress,
+        type_ids: &Vec<BigUint>,
+        values: &Vec<BigUint>,
+        data: ManagedBuffer
+    ) {
+        let caller = self.blockchain().get_caller();
+
+        require!(
+            caller == from || self.has_permission(&caller, &from).get(),
+            "Calles is not approved to transfer tokens from address"
+        );
+
+        require!(!to.is_zero(), "Tokens can't be sent to the zero address");
+        require!(
+            !type_ids.is_empty() && !values.is_empty(),
+            "There were no type_ids and values provided"
+        );
+        require!(
+            type_ids.len() == values.len(),
+            "The length of type_ids and values don't match"
+        );
+
+        for (type_id, value) in type_ids.iter().zip(values.iter()) {
+            if self.is_fungible(type_id).get() {
+                self.batch_transfer_from_fungible(
+                    &from,
+                    &to,
+                    type_id,
+                    value
+                );
+            } else {
+                self.batch_transfer_from_nonfugible(
+                    &from,
+                    &to,
+                    type_id,
+                    value
+                )
+            }
+        }
+    }
 
     #[endpoint]
     fn mint(&self, type_id: BigUint, amount: BigUint) {
@@ -128,7 +177,7 @@ pub trait Erc1155 {
         self.decrease_balance(&caller, &type_id, &amount);
     }
 
-    fn execute_call_single_transfer(
+    fn execute_call_fungible_single_transfer(
         &self,
         from: ManagedAddress,
         to: ManagedAddress,
@@ -137,11 +186,39 @@ pub trait Erc1155 {
         data: &ManagedBuffer,
     ) {
         self.modify_balance_after_transfer(&from, &to, &type_id, &amount);
+    }
 
-        if !self.is_fungible(&type_id).get() {
-            self.token_owner(&type_id, &BigUint::from(1u32));
-        }
+    fn execute_call_nonfungible_single_transfer(
+        &self,
+        to: ManagedAddress,
+        type_id: BigUint,
+        nft_id: BigUint
+    ) {
+        self.increase_balance(&to, &type_id, &BigUint::from(1u32));
+        self.token_owner(&type_id, &nft_id).set(&to);
+    }
 
+    fn batch_transfer_from_fungible(
+        &self,
+        from: &ManagedAddress,
+        to: &ManagedAddress,
+        type_id: &BigUint,
+        amount: &BigUint
+    ) {
+        self.try_balance_fungible(from, type_id, amount);
+        self.increase_balance(to, type_id, amount);
+    }
+
+    fn batch_transfer_from_nonfugible(
+        &self,
+        to: &ManagedAddress,
+        from: &ManagedAddress,
+        type_id: &BigUint,
+        nft_id: &BigUint
+    ) {
+        self.try_balance_nonfungible(from, type_id, nft_id);
+
+        self.token_owner(type_id, nft_id).set(to);
     }
 
     fn modify_balance_after_transfer(
@@ -180,9 +257,7 @@ pub trait Erc1155 {
     }
 
     fn decrease_balance(&self, owner: &ManagedAddress, type_id: &BigUint, amount: &BigUint) {
-        let mut balance = self.get_balance_mapper(owner)
-                            .get(type_id)
-                            .unwrap_or_default();
+        let mut balance = self.get_balance_for_type_id(owner, type_id);
 
         require!(
             &balance >= amount,
@@ -213,8 +288,49 @@ pub trait Erc1155 {
         require!(amount <= &balance, "Not enough balance for it");
     }
 
+    fn get_balance_for_type_id(
+        &self,
+        owner: &ManagedAddress,
+        type_id: &BigUint
+    ) -> BigUint {
+        let balance = self.get_balance_mapper(owner)
+            .get(type_id)
+            .unwrap_or_else(|| {
+                panic!("Error: Unable to retrieve balance for the given type ID")
+            });
+
+        balance
+    }
+
+    fn try_balance_nonfungible(
+        &self,
+        owner: &ManagedAddress,
+        type_id: &BigUint,
+        nft_id: &BigUint
+    ) {
+        require!(
+            self.is_valid_nft_id(type_id, nft_id),
+            "The Id for this NFT is not valid"
+        );
+
+        require!(
+            &self.token_owner(type_id, nft_id).get() == owner,
+            "Sender is not the owner of the NFT"
+        );
+
+        let amount = BigUint::from(1u32);
+        self.decrease_balance(owner, type_id, &amount);
+        self.token_owner(type_id, nft_id).set(&ManagedAddress::zero());
+    }
+
     fn is_valid_type_id(&self, type_id: &BigUint) -> bool {
         type_id > &0 && type_id <= &self.last_valid_type_id().get()
+    }
+
+    fn is_valid_nft_id(&self, type_id: &BigUint, nft_id: &BigUint) -> bool {
+        self.is_valid_type_id(type_id)
+            && nft_id > &0
+            && nft_id <= &self.last_valid_nft_type_id(type_id).get()
     }
 
     #[view(getTokenOwner)]
