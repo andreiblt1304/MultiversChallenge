@@ -1,0 +1,81 @@
+{
+    "name": "batch transfer two fungible",
+    "steps": [
+        {
+            "step": "externalSteps",
+            "path": "erc_1155-create-two-fungible-different-creator.scen.json"
+        },
+        {
+            "step": "scCall",
+            "id": "batch-transfer-two-fungible",
+            "tx": {
+                "from": "address:creator",
+                "to": "sc:erc_1155",
+                "function": "batch_transfer_from",
+                "arguments": [
+                    "address:creator",
+                    "address:user1",
+                    "u32:1|u8:1|u32:1|u8:2",
+                    "u32:2|u16:100|u32:1|u8:10",
+                    "str:mockData"
+                ],
+                "gasLimit": "5,000,000",
+                "gasPrice": "0"
+            },
+            "expect": {
+                "out": [],
+                "status": "",
+                "message": "",
+                "logs": [],
+                "gas": "*",
+                "refund": "*"
+            }
+        },
+        {
+            "step": "checkState",
+            "accounts": {
+                "address:owner": {
+                    "nonce": "1",
+                    "balance": "0",
+                    "storage": {}
+                },
+                "address:creator": {
+                    "nonce": "3",
+                    "balance": "0",
+                    "storage": {}
+                },
+                "sc:address": {
+                    "nonce": "0",
+                    "balance": "0",
+                    "storage": {
+                        "str:tokenTypeCreator|biguint:1": "address:creator",
+                        "str:isFungible|biguint:1": "true",
+                        "str:isFungible|biguint:2": "true",
+                        "str:lastValidTypeId": "2",
+                        "str:tokenTypeCreator|biguint:2": "address:creator",
+                        "str:balanceOf|address:creator|str:.mapped|biguint:1": "900",
+                        "str:balanceOf|address:creator|str:.mapped|biguint:2": "40",
+                        "str:balanceOf|address:creator|str:.node_id|biguint:1": "0x01",
+                        "str:balanceOf|address:creator|str:.node_id|biguint:2": "0x02",
+                        "str:balanceOf|address:creator|str:.value|u32:1": "0x01",
+                        "str:balanceOf|address:creator|str:.value|u32:2": "0x02",
+                        "str:balanceOf|address:creator|str:.info": "u32:2|u32:1|u32:2|u32:2",
+                        "str:balanceOf|address:creator|str:.node_links|u32:1": "0x0000000000000002",
+                        "str:balanceOf|address:creator|str:.node_links|u32:2": "0x0000000100000000",
+                        "str:balanceOf|address:user1|str:.mapped|biguint:1": "100",
+                        "str:balanceOf|address:user1|str:.mapped|biguint:2": "10",
+                        "str:balanceOf|address:user1|str:.node_id|biguint:1": "0x01",
+                        "str:balanceOf|address:user1|str:.node_id|biguint:2": "0x02",
+                        "str:balanceOf|address:user1|str:.value|u32:1": "0x01",
+                        "str:balanceOf|address:user1|str:.value|u32:2": "0x02",
+                        "str:balanceOf|address:user1|str:.info": "u32:2|u32:1|u32:2|u32:2",
+                        "str:balanceOf|address:user1|str:.node_links|u32:1": "0x0000000000000002",
+                        "str:balanceOf|address:user1|str:.node_links|u32:2": "0x0000000100000000"
+
+                    },
+                    "code": "file:../output/erc1155.wasm"
+                }
+            }
+        }
+    ]
+}
