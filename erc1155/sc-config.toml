@@ -1,0 +1,6 @@
+[settings]
+main = "erc_1155"
+
+[contracts.erc_1155]
+add-unlabelled = true
+allocator = "static64k"

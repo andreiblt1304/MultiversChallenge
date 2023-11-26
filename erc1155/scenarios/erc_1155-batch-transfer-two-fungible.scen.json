@@ -19,7 +19,7 @@
                     "u32:2|u16:100|u32:1|u8:10",
                     "str:mockData"
                 ],
-                "gasLimit": "5,000,000",
+                "gasLimit": "5,000,000,000",
                 "gasPrice": "0"
             },
             "expect": {

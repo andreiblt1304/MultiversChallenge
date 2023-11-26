@@ -7,14 +7,16 @@ publish = false
 
 [lib]
 path = "src/erc_1155.rs"
+
 [dependencies.multiversx-sc]
-version = "0.44.0"
+version = "0.45.1"
+features = ["alloc"]
 
 [dev-dependencies]
 num-bigint = "0.4.2"
 
 [dev-dependencies.multiversx-sc-scenario]
-version = "0.44.0"
+version = "0.45.1"
 
 [workspace]
 members = [".", "meta"]

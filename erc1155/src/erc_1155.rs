@@ -83,7 +83,7 @@ pub trait Erc1155 {
 
     #[endpoint]
     fn safe_transfer_from_non_fungible(
-        &self,
+        &self, 
         from: ManagedAddress,
         to: ManagedAddress,
         type_id: BigUint,
@@ -91,7 +91,11 @@ pub trait Erc1155 {
         data: &ManagedBuffer
     ) {
         self.try_balance_nonfungible(&from, &type_id, &nft_id);
-        self.execute_call_nonfungible_single_transfer(to, type_id, nft_id);
+
+        //self.execute_call_nonfungible_single_transfer(&to, &type_id, &nft_id);
+        self.increase_balance(&to, &type_id, &BigUint::from(1u32));
+        self.token_owner(&type_id, &nft_id).set(&to);
+
     }
 
     #[endpoint]
@@ -99,8 +103,8 @@ pub trait Erc1155 {
         &self,
         from: ManagedAddress,
         to: ManagedAddress,
-        type_ids: &Vec<BigUint>,
-        values: &Vec<BigUint>,
+        type_ids: &[BigUint],
+        values: &[BigUint],
         data: ManagedBuffer
     ) {
         let caller = self.blockchain().get_caller();
@@ -190,12 +194,12 @@ pub trait Erc1155 {
 
     fn execute_call_nonfungible_single_transfer(
         &self,
-        to: ManagedAddress,
-        type_id: BigUint,
-        nft_id: BigUint
+        to: &ManagedAddress,
+        type_id: &BigUint,
+        nft_id: &BigUint
     ) {
-        self.increase_balance(&to, &type_id, &BigUint::from(1u32));
-        self.token_owner(&type_id, &nft_id).set(&to);
+        self.increase_balance(to, type_id, &BigUint::from(1u32));
+        self.token_owner(type_id, nft_id).set(to);
     }
 
     fn batch_transfer_from_fungible(
