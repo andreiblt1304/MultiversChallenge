@@ -1,3 +1,5 @@
+//TODO
+
 #![no_std]
 #![allow(clippy::type_complexity)]
 
@@ -179,6 +181,82 @@ pub trait Erc1155 {
         self.decrease_balance(&caller, &type_id, &amount);
     }
 
+    fn mint_and_send_esdt_tokens(
+        &self,
+        to: &ManagedAddress,
+        amount: BigUint
+    ) -> EsdtTokenPayment<Self::Api> {
+
+        self.create_token(amount, false);
+
+        let type_id = self.last_valid_type_id().get();
+        self.mint(type_id, &amount);
+
+        EgldOrEsdtTokenPayment::new()
+    }
+
+    #[payable("*")]
+    #[endpoint]
+    fn deposit(&self) -> EgldOrEsdtTokenPayment<Self::Api> {
+        let (payment_token, payment_amount) = self.call_value().egld_or_single_fungible_esdt();
+
+        self.increase_esdt_balance(self.esdt_tokens_balance(), &payment_amount);
+
+        let caller = self.blockchain().get_caller();
+
+        let payment_result = self.mint_and_send_esdt_tokens(caller, payment_amount);
+
+        payment_result
+    }
+
+    #[payable("*")]
+    #[endpoint]
+    fn withdraw(
+        &self,
+        type_ids: &ManagedVec<BigUint>,
+        values: &ManagedRef<BigUint>
+    ) -> EgldOrEsdtTokenPayment<Self::Api> {
+        let (payment_token, payment_nonce, payment_amount) = 
+            self.call_value().single_esdt().into_tuple();
+        let caller = self.blockchain().get_caller();
+        
+        for (type_id, value) in type_ids.iter().zip(values.iter()) {
+            //let token_owner = self.token_owner(type_id, nft_id);
+            require!(
+                type_id == payment_token,
+                "The token type id provided is corresponding to the payment token"
+            );
+
+            self.decrease_balance(caller, type_id, value);
+            self.send().direct(&caller, &type_id, 0, &value);
+        };
+
+        EgldOrEsdtTokenPayment::new()
+    }
+
+    #[callback]
+    fn transfer_callback(
+        &self,
+        from: &ManagedAddress,
+        to: &ManagedAddress,
+        type_ids: &ManagedVec<BigUint>,
+        values: &ManagedVec<BigUint>,
+        #[call_result] result: ManagedAsyncCallResult<()>
+    ) {
+        let destination_addr = match result {
+            ManagedAsyncCallResult::Ok(()) => to,
+            ManagedAsyncCallResult::Err(_) => from,
+        };
+
+        for (type_id, value) in type_ids.iter().zip(values.iter()) {
+            if self.is_fungible(&type_id).get() {
+                self.increase_balance(&destination_addr, &type_id, &value);
+            } else {
+                self.increase_balance(&destination_addr, &type_id, &BigUint::from(1u32));
+            }
+        }
+    }
+
     fn execute_call_fungible_single_transfer(
         &self,
         from: ManagedAddress,
@@ -335,6 +413,21 @@ pub trait Erc1155 {
             && nft_id <= &self.last_valid_nft_type_id(type_id).get()
     }
 
+    fn increase_esdt_balance(&self, mapper: SingleValueMapper<BigUint>, amount: &BigUint) {
+        mapper.update(|b| *b += amount);
+    }
+
+    fn decrease_esdt_balance(&self, mapper: SingleValueMapper<BigUint>, amount: &BigUint) {
+        mapper.update(|b| *b -= amount);
+    }
+
+    #[view(getDepositAmount)]
+    fn get_deposit_amount(&self) -> BigUint {
+        let caller = self.blockchain().get_caller();
+
+        self.deposit(&caller).get()
+    }
+
     #[view(getTokenOwner)]
     #[storage_mapper("tokenOwner")]
     fn token_owner(&self, type_id: &BigUint, nft_id: &BigUint) -> SingleValueMapper<ManagedAddress>;
@@ -359,4 +452,7 @@ pub trait Erc1155 {
     
     #[storage_mapper("lastValidNftTypeId")]
     fn last_valid_nft_type_id(&self, type_id: &BigUint) -> SingleValueMapper<BigUint>;
+
+    #[storage_mapper("esdtTokensBalance")]
+    fn esdt_tokens_balance(&self) -> SingleValueMapper<BigUint>;
 }
