@@ -4,8 +4,6 @@
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
-use multiversx_sc::types::heap::Vec;
-
 #[multiversx_sc::contract]
 pub trait Erc1155 {
     #[init]
@@ -103,8 +101,8 @@ pub trait Erc1155 {
         &self,
         from: ManagedAddress,
         to: ManagedAddress,
-        type_ids: &[BigUint],
-        values: &[BigUint],
+        type_ids: &ManagedVec<BigUint>,
+        values: &ManagedVec<BigUint>,
         data: ManagedBuffer
     ) {
         let caller = self.blockchain().get_caller();
@@ -125,19 +123,19 @@ pub trait Erc1155 {
         );
 
         for (type_id, value) in type_ids.iter().zip(values.iter()) {
-            if self.is_fungible(type_id).get() {
+            if self.is_fungible(&type_id).get() {
                 self.batch_transfer_from_fungible(
                     &from,
                     &to,
-                    type_id,
-                    value
+                    &type_id,
+                    &value
                 );
             } else {
                 self.batch_transfer_from_nonfugible(
                     &from,
                     &to,
-                    type_id,
-                    value
+                    &type_id,
+                    &value
                 )
             }
         }
@@ -206,8 +204,8 @@ pub trait Erc1155 {
         &self,
         from: &ManagedAddress,
         to: &ManagedAddress,
-        type_id: &BigUint,
-        amount: &BigUint
+        type_id: &ManagedRef<BigUint>,
+        amount: &ManagedRef<BigUint>
     ) {
         self.try_balance_fungible(from, type_id, amount);
         self.increase_balance(to, type_id, amount);
@@ -217,8 +215,8 @@ pub trait Erc1155 {
         &self,
         to: &ManagedAddress,
         from: &ManagedAddress,
-        type_id: &BigUint,
-        nft_id: &BigUint
+        type_id: &ManagedRef<BigUint>,
+        nft_id: &ManagedRef<BigUint>
     ) {
         self.try_balance_nonfungible(from, type_id, nft_id);
 
