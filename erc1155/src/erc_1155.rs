@@ -6,6 +6,9 @@
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
+mod deposit_info;
+use deposit_info::DepositInfo;
+
 #[multiversx_sc::contract]
 pub trait Erc1155 {
     #[init]
@@ -181,58 +184,50 @@ pub trait Erc1155 {
         self.decrease_balance(&caller, &type_id, &amount);
     }
 
-    fn mint_and_send_esdt_tokens(
-        &self,
-        to: &ManagedAddress,
-        amount: BigUint
-    ) -> EsdtTokenPayment<Self::Api> {
+    // fn mint_and_send_esdt_tokens(
+    //     &self,
+    //     to: &ManagedAddress,
+    //     amount: BigUint
+    // ) -> EsdtTokenPayment<Self::Api> {
 
-        self.create_token(amount, false);
+    //     self.create_token(amount, false);
 
-        let type_id = self.last_valid_type_id().get();
-        self.mint(type_id, &amount);
+    //     let type_id = self.last_valid_type_id().get();
+    //     self.mint(type_id, amount);
 
-        EgldOrEsdtTokenPayment::new()
-    }
-
-    #[payable("*")]
-    #[endpoint]
-    fn deposit(&self) -> EgldOrEsdtTokenPayment<Self::Api> {
-        let (payment_token, payment_amount) = self.call_value().egld_or_single_fungible_esdt();
-
-        self.increase_esdt_balance(self.esdt_tokens_balance(), &payment_amount);
-
-        let caller = self.blockchain().get_caller();
-
-        let payment_result = self.mint_and_send_esdt_tokens(caller, payment_amount);
-
-        payment_result
-    }
+    //     EgldOrEsdtTokenPayment::new(0, 0, 0)
+    // }
 
     #[payable("*")]
     #[endpoint]
-    fn withdraw(
-        &self,
-        type_ids: &ManagedVec<BigUint>,
-        values: &ManagedRef<BigUint>
-    ) -> EgldOrEsdtTokenPayment<Self::Api> {
-        let (payment_token, payment_nonce, payment_amount) = 
-            self.call_value().single_esdt().into_tuple();
-        let caller = self.blockchain().get_caller();
-        
-        for (type_id, value) in type_ids.iter().zip(values.iter()) {
-            //let token_owner = self.token_owner(type_id, nft_id);
-            require!(
-                type_id == payment_token,
-                "The token type id provided is corresponding to the payment token"
-            );
-
-            self.decrease_balance(caller, type_id, value);
-            self.send().direct(&caller, &type_id, 0, &value);
-        };
-
-        EgldOrEsdtTokenPayment::new()
+    fn deposit(&self, address: Address) {
+        let payments = self.call_value().all_esdt_transfers();
+        for payment in payments.iter() {
+            require!(payment.amount > 0, "No payment");
+            let caller = self.blockchain().get_caller();
+    
+            require!(payment.token_identifier.is_valid_esdt_identifier(), "Token Id is not valid");
+            // self.send().direct(
+            //     &address,
+            //     &payment.token_identifier.try_into(EgldOrEsdtTokenIdentifier),
+            //     payment.token_nonce,
+            //     &payment.amount
+            // )
+            //self.increase_balance(&receiver, &payment.token_identifier, &payment.amount);
+            //self.deposited_tokens(&receiver).update(|_| *b += &payment.amount); 
+            self.increase_esdt_balance(self.deposited_tokens(&address), &payment.amount);
+        }
     }
+
+    // #[endpoint]
+    // fn withdraw(
+    //     &self,
+    //     address: ManagedAddress
+    // ) {
+    //     self.deposited_tokens(&address).take();
+
+    //     //EgldOrEsdtTokenPayment::new()
+    // }
 
     #[callback]
     fn transfer_callback(
@@ -425,7 +420,8 @@ pub trait Erc1155 {
     fn get_deposit_amount(&self) -> BigUint {
         let caller = self.blockchain().get_caller();
 
-        self.deposit(&caller).get()
+        //self.deposit().get()
+        BigUint::from(1u32)
     }
 
     #[view(getTokenOwner)]
@@ -454,5 +450,9 @@ pub trait Erc1155 {
     fn last_valid_nft_type_id(&self, type_id: &BigUint) -> SingleValueMapper<BigUint>;
 
     #[storage_mapper("esdtTokensBalance")]
-    fn esdt_tokens_balance(&self) -> SingleValueMapper<BigUint>;
+    fn deposited_tokens(&self, owner: &Address) -> SingleValueMapper<BigUint>;
+
+    #[view]
+    #[storage_mapper("depositInfo")]
+    fn deposit_info(&self, depositor: &ManagedAddress) -> SingleValueMapper<DepositInfo<Self::Api>>;
 }
