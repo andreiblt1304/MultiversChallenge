@@ -1,8 +1,9 @@
 #![allow(deprecated)]
 
 use std::{cell::RefCell, rc::Rc};
-
+use multiversx_sc::types::BigUint;
 use multiversx_sc::types::Address;
+use multiversx_sc_scenario::testing_framework::TxResult;
 use multiversx_sc_scenario::{testing_framework::{BlockchainStateWrapper, ContractObjWrapper}, DebugApi, rust_biguint};
 use erc1155::Erc1155;
 const ERC1155_WASM_PATH: &str = "../output/erc_1155.wasm";
@@ -51,21 +52,17 @@ where
     
     pub fn call_deposit(
         &mut self,
-        erc1155_setup: &mut Erc1155Setup<Erc1155ObjBuilder>,
-        amount: &num_bigint::BigUint,
-    ) where
-        Erc1155ObjBuilder: 'static + Copy + Fn() -> erc1155::ContractObj<DebugApi>
-    {
-        let b_wrapper = &mut erc1155_setup.b_mock;
+        amount: u64,
+    ) -> TxResult {
+        //let b_wrapper = &self.b_mock;
         self.b_mock.borrow_mut().execute_esdt_transfer(
-            &erc1155_setup.owner_address, 
-        &erc1155_setup.erc_wrapper, 
+            &self.owner_address, 
+        &self.erc_wrapper, 
             &[1u8], 
             0, 
-            amount, 
-            |sc| { sc.deposit(erc1155_setup.erc_wrapper.address_ref().clone()); }
+            &rust_biguint!(amount), 
+            |sc| { sc.deposit(self.erc_wrapper.address_ref().clone()); }
         )
-        .assert_ok();
     }
 }
 
