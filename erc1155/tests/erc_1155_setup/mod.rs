@@ -1,11 +1,10 @@
 #![allow(deprecated)]
 
-use std::{borrow::BorrowMut, cell::RefCell};
+use std::{cell::RefCell, rc::Rc};
 
 use multiversx_sc::types::Address;
 use multiversx_sc_scenario::{testing_framework::{BlockchainStateWrapper, ContractObjWrapper}, DebugApi, rust_biguint};
 use erc1155::Erc1155;
-
 const ERC1155_WASM_PATH: &str = "../output/erc_1155.wasm";
 const OWNER_BALANCE: u64 = 100000000;
 
@@ -13,17 +12,17 @@ pub struct Erc1155Setup<Erc1155ObjBuilder>
 where
     Erc1155ObjBuilder: 'static + Copy + Fn() -> erc1155::ContractObj<DebugApi>,
 {
-    pub b_mock: RefCell<BlockchainStateWrapper>,
+    pub b_mock: Rc<RefCell<BlockchainStateWrapper>>,
     pub owner_address: Address,
     pub erc_wrapper: ContractObjWrapper<erc1155::ContractObj<DebugApi>, Erc1155ObjBuilder>,
 }
 
 impl<Erc1155ObjBuilder> Erc1155Setup<Erc1155ObjBuilder>
 where
-    Erc1155ObjBuilder: 'static + Copy + Clone + Fn() -> erc1155::ContractObj<DebugApi>,
+    Erc1155ObjBuilder: 'static + Copy + Fn() -> erc1155::ContractObj<DebugApi>,
 {
     pub fn new(
-        b_mock: RefCell<BlockchainStateWrapper>,
+        b_mock: Rc<RefCell<BlockchainStateWrapper>>,
         builder: Erc1155ObjBuilder,
         owner_address: &Address
     ) -> Self {
@@ -44,7 +43,7 @@ where
             .assert_ok();
 
         Self {
-            b_mock: b_mock,
+            b_mock,
             owner_address: owner_address.clone(),
             erc_wrapper
         }
