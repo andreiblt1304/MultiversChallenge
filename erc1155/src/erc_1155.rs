@@ -3,16 +3,22 @@
 #![no_std]
 #![allow(clippy::type_complexity)]
 
+use deposit_info::DepositInfo;
+
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 mod deposit_info;
-use deposit_info::DepositInfo;
 
 #[multiversx_sc::contract]
 pub trait Erc1155 {
     #[init]
-    fn init(&self) {}
+    fn init(
+        &self,
+        accepted_tokens: MultiValueEncoded<EgldOrEsdtTokenIdentifier>
+    ) {
+        self.add_accepted_tokens(accepted_tokens);
+    }
 
     #[endpoint(createToken)]
     fn create_token(
@@ -203,10 +209,10 @@ pub trait Erc1155 {
     fn deposit(&self, address: Address) {
         let payments = self.call_value().all_esdt_transfers();
         for payment in payments.iter() {
-            require!(payment.amount > 0, "No payment");
-            let caller = self.blockchain().get_caller();
-    
+            require!(payment.amount > 0, "No payment");    
             require!(payment.token_identifier.is_valid_esdt_identifier(), "Token Id is not valid");
+            self.increase_esdt_balance(self.deposited_tokens(&address), &payment.amount);
+
             // self.send().direct(
             //     &address,
             //     &payment.token_identifier.try_into(EgldOrEsdtTokenIdentifier),
@@ -215,7 +221,6 @@ pub trait Erc1155 {
             // )
             //self.increase_balance(&receiver, &payment.token_identifier, &payment.amount);
             //self.deposited_tokens(&receiver).update(|_| *b += &payment.amount); 
-            self.increase_esdt_balance(self.deposited_tokens(&address), &payment.amount);
         }
     }
 
@@ -455,4 +460,21 @@ pub trait Erc1155 {
     #[view]
     #[storage_mapper("depositInfo")]
     fn deposit_info(&self, depositor: &ManagedAddress) -> SingleValueMapper<DepositInfo<Self::Api>>;
+
+    #[view(getAcceptedTokens)]
+    #[storage_mapper("acceptedTokens")]
+    fn accepted_tokens(&self) -> UnorderedSetMapper<EgldOrEsdtTokenIdentifier>;
+
+    #[only_owner]
+    #[endpoint(addAcceptedTokens)]
+    fn add_accepted_tokens(
+        &self,
+        accepted_tokens: MultiValueEncoded<EgldOrEsdtTokenIdentifier>
+    ) {
+        for token in accepted_tokens {
+            require!(token.is_valid(), "Invalud token");
+
+            let _ = self.accepted_tokens().insert(token);
+        }
+    }
 }
