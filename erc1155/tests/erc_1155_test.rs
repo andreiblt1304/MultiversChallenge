@@ -1,5 +1,5 @@
 #![allow(deprecated)]
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, borrow::BorrowMut};
 
 use erc_1155_setup::Erc1155Setup;
 use multiversx_sc_scenario::{self, DebugApi, testing_framework::BlockchainStateWrapper, rust_biguint, scenario_model::BigUintValue};
@@ -22,7 +22,8 @@ fn init_all<
     let erc_sc = Erc1155Setup::new(
         b_mock_rc.clone(),
         erc_builder,
-        &owner
+        &owner,
+        vec![TOKEN_ID.to_vec()]
     );
 
     b_mock_rc
@@ -31,7 +32,7 @@ fn init_all<
             &owner, 
             &erc_sc.erc_wrapper, 
             &rust_biguint!(0), 
-            |sc| {}
+            |sc| { }
         )
         .assert_ok();
 
@@ -46,12 +47,13 @@ fn init_test() {
 #[test]
 fn deposit_ok() {
     let rust_zero = &rust_biguint!(0);
-    let (b_mock_rc, mut erc_sc) = init_all(erc1155::contract_obj);
-    let amount = 64;
-    let user = b_mock_rc.borrow_mut().create_user_account(rust_zero);
+    let (b_mock_rc, mut erc_sc) = 
+        init_all(erc1155::contract_obj);
+    let amount = 1000000;
+    let user = b_mock_rc.borrow().create_user_account(rust_zero);
     
     b_mock_rc
-        .borrow_mut()
+        .borrow()
         .set_esdt_balance(&user, TOKEN_ID, &rust_biguint!(1000000));
 
     erc_sc.call_deposit(&user, TOKEN_ID, amount).assert_ok();
@@ -59,4 +61,28 @@ fn deposit_ok() {
     b_mock_rc
         .borrow()
         .check_esdt_balance(erc_sc.erc_wrapper.address_ref(), TOKEN_ID, &rust_biguint!(1000000));
+}
+
+#[test]
+fn withdraw_ok() {
+    let rust_zero = &rust_biguint!(0);
+    let (b_mock_rc, mut erc_sc) = 
+        init_all(erc1155::contract_obj);
+
+    let amount = 1000000;
+    let user = b_mock_rc.borrow().create_user_account(rust_zero);
+    
+    b_mock_rc
+        .borrow()
+        .set_esdt_balance(&user, TOKEN_ID, &rust_biguint!(1000000));
+
+    erc_sc.call_deposit(&user, TOKEN_ID, amount).assert_ok();
+
+    erc_sc
+        .call_withdraw(&user, vec![(TOKEN_ID.to_vec(), 999999)])
+        .assert_ok();
+
+    b_mock_rc
+        .borrow()
+        .check_esdt_balance(&user, TOKEN_ID, &rust_zero);
 }

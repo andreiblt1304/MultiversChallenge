@@ -1,13 +1,14 @@
 #![allow(deprecated)]
 
 use std::{cell::RefCell, rc::Rc};
-use multiversx_sc::api::ManagedTypeApi;
-use multiversx_sc::types::BigUint;
 use multiversx_sc::types::Address;
 use multiversx_sc::types::EgldOrEsdtTokenIdentifier;
-use multiversx_sc::types::ManagedVec;
+use multiversx_sc::types::EsdtTokenPayment;
 use multiversx_sc::types::MultiValueEncoded;
 use multiversx_sc::types::TokenIdentifier;
+use multiversx_sc_scenario::managed_biguint;
+use multiversx_sc_scenario::managed_egld_token_id;
+use multiversx_sc_scenario::managed_token_id_wrapped;
 use multiversx_sc_scenario::testing_framework::TxResult;
 use multiversx_sc_scenario::{testing_framework::{BlockchainStateWrapper, ContractObjWrapper}, DebugApi, rust_biguint};
 use erc1155::Erc1155;
@@ -47,14 +48,14 @@ where
             &erc_wrapper, 
             &rust_zero, 
             |sc| {
-                let mut args = MultiValueEncoded::new();
+                let mut managed_args = MultiValueEncoded::<DebugApi, EgldOrEsdtTokenIdentifier<DebugApi>>::new();
                 for arg in accepted_tokens {
                     if &arg == b"EGLD" {
-                        let token_id = EgldOrEsdtTokenIdentifier::egld();
-                        args.push(token_id);
+                        let token_id = managed_egld_token_id!();
+                        managed_args.push(token_id);
                     } else {
                         let token_id = TokenIdentifier::from_esdt_bytes(arg);
-                        args.push(EgldOrEsdtTokenIdentifier::esdt(token_id));
+                        managed_args.push(EgldOrEsdtTokenIdentifier::esdt(token_id));
                     }
                 }
             })
@@ -73,15 +74,43 @@ where
         token_id: &[u8],
         amount: u64,
     ) -> TxResult {
-        //let b_wrapper = &self.b_mock;
-        self.b_mock.borrow_mut().execute_esdt_transfer(
-            caller, 
-        &self.erc_wrapper, 
-            token_id, 
-            0, 
-            &rust_biguint!(amount), 
-            |sc| { sc.deposit(self.erc_wrapper.address_ref().clone()); }
+        self.b_mock
+            .borrow_mut()
+            .execute_esdt_transfer(
+                caller, 
+            &self.erc_wrapper, 
+                token_id, 
+                0, 
+                &rust_biguint!(amount), 
+                |sc| { sc.deposit(self.erc_wrapper.address_ref().clone()); }
         )
+    }
+
+    pub fn call_withdraw(
+        &mut self,
+        caller: &Address,
+        tokens: Vec<(Vec<u8>, u64)>
+    ) -> TxResult {
+        self.b_mock
+            .borrow_mut()
+            .execute_tx(
+                caller,
+                &self.erc_wrapper,
+                &rust_biguint!(0),
+                |sc| {
+                    let mut managed_args = MultiValueEncoded::<DebugApi, EsdtTokenPayment<DebugApi>>::new();
+                    for token in tokens {
+                        managed_args.push(EsdtTokenPayment::new(
+                            managed_token_id_wrapped!(token.0).unwrap_esdt(),
+                            0,
+                            managed_biguint!(token.1)
+                            )
+                        )
+                        .into()
+                    }
+
+                    let _ = sc.withdraw(managed_args);
+                })
     }
 }
 

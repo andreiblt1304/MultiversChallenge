@@ -190,49 +190,47 @@ pub trait Erc1155 {
         self.decrease_balance(&caller, &type_id, &amount);
     }
 
-    // fn mint_and_send_esdt_tokens(
-    //     &self,
-    //     to: &ManagedAddress,
-    //     amount: BigUint
-    // ) -> EsdtTokenPayment<Self::Api> {
-
-    //     self.create_token(amount, false);
-
-    //     let type_id = self.last_valid_type_id().get();
-    //     self.mint(type_id, amount);
-
-    //     EgldOrEsdtTokenPayment::new(0, 0, 0)
-    // }
-
     #[payable("*")]
     #[endpoint]
     fn deposit(&self, address: Address) {
         let payments = self.call_value().all_esdt_transfers();
         for payment in payments.iter() {
             require!(payment.amount > 0, "No payment");    
-            require!(payment.token_identifier.is_valid_esdt_identifier(), "Token Id is not valid");
             self.increase_esdt_balance(self.deposited_tokens(&address), &payment.amount);
-
-            // self.send().direct(
-            //     &address,
-            //     &payment.token_identifier.try_into(EgldOrEsdtTokenIdentifier),
-            //     payment.token_nonce,
-            //     &payment.amount
-            // )
-            //self.increase_balance(&receiver, &payment.token_identifier, &payment.amount);
-            //self.deposited_tokens(&receiver).update(|_| *b += &payment.amount); 
         }
     }
 
-    // #[endpoint]
-    // fn withdraw(
-    //     &self,
-    //     address: ManagedAddress
-    // ) {
-    //     self.deposited_tokens(&address).take();
+    #[endpoint]
+    fn withdraw(
+        &self,
+        tokens_to_withdraw: MultiValueEncoded<EsdtTokenPayment>
+    ) {
+        let caller = self.blockchain().get_caller();
+        let mut output_payments = ManagedVec::<Self::Api, EsdtTokenPayment<Self::Api>>::new();
+        for token in tokens_to_withdraw {
+            output_payments.push(EsdtTokenPayment::new(
+                token.token_identifier,
+                0,
+                token.amount.clone()
+            ));
 
-    //     //EgldOrEsdtTokenPayment::new()
-    // }
+            //self.decrease_esdt_balance(self.deposited_tokens(address), &token.amount);
+            self.send().direct_multi(&caller, &output_payments);
+        }
+    }
+
+    #[only_owner]
+    #[endpoint(addAcceptedTokens)]
+    fn add_accepted_tokens(
+        &self,
+        accepted_tokens: MultiValueEncoded<EgldOrEsdtTokenIdentifier>
+    ) {
+        for token in accepted_tokens {
+            require!(token.is_valid(), "Invalud token");
+
+            let _ = self.accepted_tokens().insert(token);
+        }
+    }
 
     #[callback]
     fn transfer_callback(
@@ -465,16 +463,6 @@ pub trait Erc1155 {
     #[storage_mapper("acceptedTokens")]
     fn accepted_tokens(&self) -> UnorderedSetMapper<EgldOrEsdtTokenIdentifier>;
 
-    #[only_owner]
-    #[endpoint(addAcceptedTokens)]
-    fn add_accepted_tokens(
-        &self,
-        accepted_tokens: MultiValueEncoded<EgldOrEsdtTokenIdentifier>
-    ) {
-        for token in accepted_tokens {
-            require!(token.is_valid(), "Invalud token");
-
-            let _ = self.accepted_tokens().insert(token);
-        }
-    }
+    // #[view(getUserDepositedEgld)]
+    // fn user_deposited_history(&self, caller: &Address) -> SingleValueMapper<EsdtTokenPaymentMultiArg<Self::Api>> {}
 }
