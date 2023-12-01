@@ -101,6 +101,34 @@ pub trait ServiceModule: crate::payments::payments::PaymentsModule {
         }
     }
 
+    #[endpoint]
+    fn unsubscribe(
+        &self,
+        services: MultiValueEncoded<MultiValue2<AddressId, usize>>
+    )  {
+            let caller = self.blockchain().get_caller();
+            let caller_id = self.user_id().get_id_non_zero(&caller);
+
+            for pair in services {
+                let (service_id, service_index) = pair.into_tuple();
+                let service_options = self.service_info(service_id).get();
+
+                require!(
+                    service_index < service_options.len(),
+                    "Invalid service index"
+                );
+
+                self
+                    .subscription_type(caller_id, service_id, service_index)
+                    .clear();
+
+                let _ = self
+                    .subscribed_users(service_id, service_index)
+                    .swap_remove(&caller_id);
+            } 
+        }
+    
+
     #[storage_mapper("serviceId")]
     fn service_id(&self) -> AddressToIdMapper<Self::Api>;
 

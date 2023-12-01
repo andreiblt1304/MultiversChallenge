@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                            7
+// Endpoints:                           12
 // Async Callback (empty):               1
-// Total number of exported functions:   9
+// Total number of exported functions:  14
 
 #![no_std]
 
@@ -29,6 +29,11 @@ multiversx_sc_wasm_adapter::endpoints! {
         getUserDepositedPayments => user_deposited_payments
         getUserDepositedEgld => user_deposited_egld
         registerService => register_service
+        subscribe => subscribe
+        unsubscribe => unsubscribe
+        getServiceInfo => service_info
+        getPendingServices => pending_services
+        getSubscribedUsers => subscribed_users
     )
 }
 
