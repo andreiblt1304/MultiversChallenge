@@ -42,6 +42,7 @@ impl<T: NestedEncode + NestedDecode + TypeAbi, E: NestedEncode + NestedDecode + 
 pub trait SubstractPaymentsModule:
     crate::payments::payments::PaymentsModule
     + crate::service::ServiceModule
+    + crate::pair_safe_price_actions::PairSafePriceActionsModule
     //+ multiversx_sc_modules::ongoing_operation::OngoingOperationModule
 {
     #[endpoint(substractPayment)]
@@ -148,9 +149,13 @@ pub trait SubstractPaymentsModule:
 
         let mut user_tokens = tokens_mapper.get().into_payments();
 
-        for (index, payment) in user_tokens.iter().enumerate() {
-            //let mut payment = user_tokens.get(index);
-            let query_result = self.get_price(payment.token_identifier.clone());
+        for (index, mut payment) in user_tokens.iter().enumerate() {
+            let safe_price = self.get_safe_price(payment.token_identifier.clone(), payment.amount.clone());
+            let query_result = if safe_price == 0 {
+                Result::Err(())
+            } else {
+                Result::Ok(safe_price.clone())
+            };
 
             if query_result.is_err() {
                 continue;

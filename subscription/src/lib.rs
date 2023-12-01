@@ -2,6 +2,7 @@
 
 pub mod payments;
 pub mod service;
+pub mod pair_safe_price_actions;
 
 multiversx_sc::imports!();
 
@@ -9,6 +10,7 @@ multiversx_sc::imports!();
 pub trait Subscription:
     payments::payments::PaymentsModule
     + service::ServiceModule
+    + pair_safe_price_actions::PairSafePriceActionsModule   
 {
     #[init]
     fn init(
