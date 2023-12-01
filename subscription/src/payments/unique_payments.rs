@@ -12,7 +12,9 @@ pub struct  UniquePayments<M: ManagedTypeApi> {
 impl<M: ManagedTypeApi> Default for UniquePayments<M> {
     #[inline]
     fn default() -> Self {
-        Self::default()
+        Self {
+            payments: PaymentsVec::new()
+        }
     }
 }
 

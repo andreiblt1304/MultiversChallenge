@@ -90,7 +90,7 @@ pub trait PaymentsModule {
             }
 
             let token_index = unsafe { opt_found_index.unwrap_unchecked() };
-            let mut token_info = all_user_tokens.get(token_index);
+            let token_info = all_user_tokens.get(token_index);
 
             if token_info.amount == amount {
                 let _ = all_user_tokens.set(token_index, &token_info);

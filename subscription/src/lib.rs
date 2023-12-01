@@ -1,12 +1,14 @@
 #![no_std]
 
 pub mod payments;
+pub mod service;
 
 multiversx_sc::imports!();
 
 #[multiversx_sc::contract]
 pub trait Subscription:
     payments::payments::PaymentsModule
+    + service::ServiceModule
 {
     #[init]
     fn init(

@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                            0
+// Endpoints:                            7
 // Async Callback (empty):               1
-// Total number of exported functions:   2
+// Total number of exported functions:   9
 
 #![no_std]
 
@@ -22,6 +22,13 @@ multiversx_sc_wasm_adapter::endpoints! {
     subscription
     (
         init => init
+        addAcceptedPaymentTokens => add_accepted_payment_tokens
+        deposit => deposit
+        withdraw => withdraw
+        getAcceptedFeesTokens => accepted_payment_tokens
+        getUserDepositedPayments => user_deposited_payments
+        getUserDepositedEgld => user_deposited_egld
+        registerService => register_service
     )
 }
 
