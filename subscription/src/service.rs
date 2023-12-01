@@ -11,7 +11,7 @@ pub struct ServiceInfo<M: ManagedTypeApi> {
 }
 
 #[derive(TypeAbi, TopDecode, TopEncode)]
-pub enum Periodicity {
+pub enum SubscriptionType {
     None,
     Daily,
     Weekly,
@@ -35,6 +35,7 @@ pub trait ServiceModule: crate::payments::payments::PaymentsModule {
 
         let mut services = ManagedVec::<Self::Api, ServiceInfo<Self::Api>>::new();
 
+        // may contain multiple services
         for arg in args {
             let (
                 sc_address, 
@@ -65,8 +66,70 @@ pub trait ServiceModule: crate::payments::payments::PaymentsModule {
         }
     }
 
+    #[endpoint]
+    fn subscribe(
+        &self,
+        services: MultiValueEncoded<MultiValue3<AddressId, usize, SubscriptionType>>
+    ) {
+        let caller = self.blockchain().get_caller();
+        let caller_id = self.user_id().get_id_non_zero(&caller);
+        
+        for pair in services {
+            let (
+                service_id,
+                service_index,
+                subscription_type
+            ) = pair.into_tuple();
+            let service_options = self.service_info(service_id).get();
+
+            require!(
+                service_index < service_options.len(),
+                "Invalid service index"
+            );
+
+            require!(
+                !matches!(subscription_type, SubscriptionType::None),
+                "Invalid subscription type"
+            );
+
+            self.subscription_type(caller_id, service_id, service_index)
+                .set(subscription_type);
+
+            let _ = self
+                .subscribed_users(service_id, service_index)
+                .swap_remove(&caller_id);
+        }
+    }
+
     #[storage_mapper("serviceId")]
     fn service_id(&self) -> AddressToIdMapper<Self::Api>;
+
+    #[view(getServiceInfo)]
+    #[storage_mapper("serviceInfo")]
+    fn service_info(
+        &self,
+        service_id: AddressId,
+    ) -> SingleValueMapper<ManagedVec<ServiceInfo<Self::Api>>>;
+
+    #[view(getPendingServices)]
+    #[storage_mapper("pendingServices")]
+    fn pending_services(&self) -> UnorderedSetMapper<ManagedAddress>;
+
+    #[view(getSubscribedUsers)]
+    #[storage_mapper("subscribedUsers")]
+    fn subscribed_users(
+        &self,
+        service_id: AddressId,
+        service_index: usize,
+    ) -> UnorderedSetMapper<AddressId>;
+
+    #[storage_mapper("subscriptionType")]
+    fn subscription_type(
+        &self,
+        user_id: AddressId,
+        service_id: AddressId,
+        service_index: usize,
+    ) -> SingleValueMapper<SubscriptionType>;
 }
 
 
