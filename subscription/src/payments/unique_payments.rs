@@ -56,8 +56,31 @@ impl<M: ManagedTypeApi> UniquePayments<M> {
         self.payments.push(new_payment);
     }
 
+    pub fn withdraw_payments(&mut self, payment: &EsdtTokenPayment<M>) -> Result<(), ()> {
+        if payment.amount == 0 {
+            return Result::Ok(());
+        }
+
+        let len = self.payments.len();
+        for i in 0..len {
+            let mut current_payment = self.payments.get(i);
+
+            if current_payment.amount < payment.amount {
+                return Result::Err(());
+            }
+
+            current_payment.amount -= &payment.amount;
+            let _ = self.payments.set(i, &current_payment);
+
+            return Result::Ok(());
+        }
+
+        Result::Err(())
+    }
+
     #[inline]
     pub fn into_payments(self) -> PaymentsVec<M> {
         self.payments
     }
+
 }
