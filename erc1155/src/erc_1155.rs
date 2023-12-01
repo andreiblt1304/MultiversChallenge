@@ -207,6 +207,7 @@ pub trait Erc1155 {
     ) {
         let caller = self.blockchain().get_caller();
         let mut output_payments = ManagedVec::<Self::Api, EsdtTokenPayment<Self::Api>>::new();
+        //let sc_address = self.blockchain().is_smart_contract()
         for token in tokens_to_withdraw {
             output_payments.push(EsdtTokenPayment::new(
                 token.token_identifier,
