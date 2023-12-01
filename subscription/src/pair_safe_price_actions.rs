@@ -14,18 +14,6 @@ pub mod pair_proxy {
     }
 }
 
-#[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode, Clone, PartialEq, Debug)]
-pub struct SafePriceInfo<M: ManagedTypeApi + TopEncode> {
-    pub pair_address: ManagedAddress<M>,
-    pub payment: EsdtTokenPayment<M>
-}
-
-impl<M: ManagedTypeApi + TopEncode> SafePriceInfo<M> {
-    pub fn new() -> Self {
-        Self::new()
-    }
-}
-
 #[multiversx_sc::module]
 pub trait PairSafePriceActionsModule {
     #[only_owner]
