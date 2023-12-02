@@ -64,6 +64,10 @@ pub trait ServiceModule: crate::payments::payments::PaymentsModule {
                 }
             );
         }
+
+        let service_id = self.service_id().insert_new(&service_address);
+        self.service_info(service_id)
+            .update(|added_services| added_services.extend(services.iter()));
     }
 
     #[endpoint]

@@ -65,8 +65,6 @@ pub trait SubstractPaymentsModule:
         }
         
         let opt_user_adddress = self.user_id().get_address(user_id);
-
-        let opt_user_adddress = self.user_id().get_address(user_id);
         
         if opt_user_adddress.is_none() {
             return CustomScResult::Err(());

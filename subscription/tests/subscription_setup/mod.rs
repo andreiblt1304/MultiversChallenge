@@ -1,10 +1,10 @@
 #![allow(deprecated)]
 
-use std::{cell::RefCell, rc::Rc, fmt::Debug};
+use std::{cell::RefCell, rc::Rc};
 
-use multiversx_sc::{types::{MultiValueEncoded, EgldOrEsdtTokenIdentifier, Address, TokenIdentifier, ManagedAddress, BigUint}, codec::multi_types::MultiValue3};
+use multiversx_sc::{types::{MultiValueEncoded, EgldOrEsdtTokenIdentifier, Address, TokenIdentifier, ManagedAddress, BigUint}, codec::multi_types::MultiValue3, storage::mappers::AddressId};
 use multiversx_sc_scenario::{testing_framework::{BlockchainStateWrapper, ContractObjWrapper, TxResult}, DebugApi, rust_biguint, managed_address, managed_token_id_wrapped, managed_biguint};
-use subscription::{self, Subscription, service::ServiceModule};
+use subscription::{self, Subscription, service::{ServiceModule, SubscriptionType}, payments::{payments::PaymentsModule, substract_payments::SubstractPaymentsModule}};
 
 pub struct SubscriptionSetup<SubscriptionObjBuilder>
 where
@@ -32,7 +32,7 @@ where
             &rust_zero,
             Some(owner_address),
             builder,
-            "some wasm path"
+            "../output/subscription.wasm"
         );
 
         b_mock
@@ -97,5 +97,64 @@ where
                     sc.register_service(args_encoded);
                 }
             )
+    }
+
+    pub fn call_deposit(
+        &self,
+        caller: &Address,
+        token_id: &[u8],
+        amount: u64
+    ) -> TxResult {
+        self.b_mock
+            .borrow_mut()
+            .execute_esdt_transfer(
+                caller,
+                &self.sub_wrapper,
+                token_id,
+                0,
+                &rust_biguint!(amount),
+                |sc| {
+                    sc.deposit();
+                }
+            )
+    }
+
+    pub fn call_subscribe(
+        &mut self,
+        caller: &Address,
+        args: Vec<(AddressId, usize, SubscriptionType)>
+    ) -> TxResult {
+        self.b_mock
+            .borrow_mut()
+            .execute_tx(
+                caller,
+                &self.sub_wrapper,
+                &rust_biguint!(0),
+                |sc| {
+                    let mut managed_services = 
+                        MultiValueEncoded::<DebugApi, MultiValue3<AddressId, usize, SubscriptionType>>::new();
+                    for arg in args {
+                        managed_services.push((arg.0, arg.1, arg.2).into())
+                    }
+
+                    sc.subscribe(managed_services)
+                })
+    }
+
+    pub fn call_substract_payment(
+        &mut self,
+        caller: &Address,
+        service_index: usize,
+        user_id: AddressId
+    ) -> TxResult {
+        self.b_mock
+            .borrow_mut()
+            .execute_tx(
+                caller,
+                &self.sub_wrapper,
+                &rust_biguint!(0),
+            |sc| {
+                let _ = sc.substract_payment(service_index, user_id);
+            })
     }
 }
