@@ -77,26 +77,6 @@ fn init_all<
     (b_mock_rc, pair_setup, sub_sc)
 }
 
-// fn service_register_setup() {
-//     let (b_mock_rc, pair_setup, mut sub_sc) = 
-//         init_all(|| pair_actions::contract_obj(), || subscription::contract_obj());
-    
-//     let rust_zero = rust_biguint!(0);
-
-//     let rand_service = b_mock_rc.borrow_mut().create_user_account(&rust_zero)
-
-//     sub_sc
-//         .call_register_service(
-//             &rand_service,
-//             vec![(
-//                 pair_setup.pair_wrapper.address_ref().clone(),
-//                 Some(FIRST_TOKEN_ID.to_vec()),
-//                 1000
-//             )]
-//         )
-//         .assert_ok();
-// }
-
 #[test]
 fn init_test() {
     let _ = init_all(|| pair_actions::contract_obj(), || subscription::contract_obj());
