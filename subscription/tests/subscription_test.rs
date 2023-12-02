@@ -49,6 +49,13 @@ fn init_all<
         vec![FIRST_TOKEN_ID.to_vec()]
     );
 
+    let owner = b_mock_rc
+        .borrow_mut()
+        .create_user_account(&rust_biguint!(0));
+    // let sc_address = b_mock_rc
+    //     .borrow_mut()
+    //     .create_sc_account(0, owner, 
+
     b_mock_rc
         .borrow_mut()
         .execute_tx(
@@ -60,6 +67,10 @@ fn init_all<
                 managed_token_id!(FIRST_TOKEN_ID),
                 managed_address!(pair_setup.pair_wrapper.address_ref()),
             );
+            sc.add_pair(
+                managed_token_id!(LP_TOKEN_ID),
+                managed_address!(pair_setup.pair_wrapper.address_ref())
+            )
         })
         .assert_ok();
 
@@ -144,7 +155,7 @@ fn subscribe_before_deposit_test() {
 }
 
 #[test]
-fn subscribe_ok_test() {
+fn subscribe_single_ok_test() {
     let (b_mock_rc, pair_setup, mut sub_sc) = 
         init_all(|| pair_actions::contract_obj(), || subscription::contract_obj());
 
@@ -160,6 +171,48 @@ fn subscribe_ok_test() {
                 Some(FIRST_TOKEN_ID.to_vec()),
                 1000
             )]
+        )
+        .assert_ok();
+
+    let user = b_mock_rc.borrow_mut().create_user_account(&rust_zero);
+
+    b_mock_rc
+        .borrow_mut()
+        .set_esdt_balance(&user, FIRST_TOKEN_ID, &rust_biguint!(1000000));
+
+    sub_sc
+        .call_deposit(&user, FIRST_TOKEN_ID, 1000000)
+        .assert_ok();
+
+    sub_sc
+        .call_subscribe(&user, vec![(1, 0, SubscriptionType::Daily)])
+        .assert_ok();    
+}
+
+#[test]
+fn subscribe_multiple_ok_test() {
+    let (b_mock_rc, pair_setup, mut sub_sc) = 
+        init_all(|| pair_actions::contract_obj(), || subscription::contract_obj());
+
+    let rust_zero = rust_biguint!(0);
+
+    let rand_service = b_mock_rc.borrow_mut().create_user_account(&rust_zero);
+
+    sub_sc
+        .call_register_service(
+            &rand_service,
+            vec![
+                (
+                    pair_setup.pair_wrapper.address_ref().clone(),
+                    Some(FIRST_TOKEN_ID.to_vec()),
+                    1000
+                ),
+                (
+                    pair_setup.pair_wrapper.address_ref().clone(),
+                    Some(LP_TOKEN_ID.to_vec()),
+                    2000
+                )
+            ]
         )
         .assert_ok();
 

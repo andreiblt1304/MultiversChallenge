@@ -49,13 +49,6 @@ pub trait ServiceModule: crate::payments::payments::PaymentsModule {
                 "Invalid SC address"
             );
 
-            if let Some(token_id) = &opt_payment_token {
-                require!(
-                    self.accepted_payment_tokens().contains(token_id),
-                    "Invalid token ID"
-                );
-            }
-
             services.push(
                 ServiceInfo {
                     sc_address,
