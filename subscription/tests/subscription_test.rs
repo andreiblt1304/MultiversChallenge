@@ -52,9 +52,6 @@ fn init_all<
     let owner = b_mock_rc
         .borrow_mut()
         .create_user_account(&rust_biguint!(0));
-    // let sc_address = b_mock_rc
-    //     .borrow_mut()
-    //     .create_sc_account(0, owner, 
 
     b_mock_rc
         .borrow_mut()

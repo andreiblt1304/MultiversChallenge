@@ -1,6 +1,6 @@
 #![allow(deprecated)]
 
-use std::{cell::RefCell, rc::Rc, fmt::Debug};
+use std::{cell::RefCell, rc::Rc};
 
 use multiversx_sc::{types::{MultiValueEncoded, EgldOrEsdtTokenIdentifier, Address, TokenIdentifier, ManagedAddress, BigUint}, codec::multi_types::{MultiValue3, MultiValue2}, storage::mappers::AddressId};
 use multiversx_sc_scenario::{testing_framework::{BlockchainStateWrapper, ContractObjWrapper, TxResult}, DebugApi, rust_biguint, managed_address, managed_token_id_wrapped, managed_biguint};

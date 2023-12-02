@@ -43,7 +43,6 @@ pub trait SubstractPaymentsModule:
     crate::payments::payments::PaymentsModule
     + crate::service::ServiceModule
     + crate::pair_actions::PairActionsModule
-    //+ multiversx_sc_modules::ongoing_operation::OngoingOperationModule
 {
     #[endpoint(substractPayment)]
     fn substract_payment(
@@ -84,7 +83,7 @@ pub trait SubstractPaymentsModule:
             Some(token_id) => {
                 self.substract_specific_token(user_id, token_id, service_info.amount * multiplier)
             }
-            None => self.substract_any_token(user_id, service_info.amount * multiplier)
+            None => self.substract_any_token(user_id)
         };
 
         if let CustomScResult::Ok(payment) = &substract_result {
@@ -137,7 +136,6 @@ pub trait SubstractPaymentsModule:
     fn substract_any_token(
         &self,
         user_id: AddressId,
-        amount: BigUint
     ) -> CustomScResult<EgldOrEsdtTokenPayment, ()> {
         let tokens_mapper = self.user_deposited_payments(user_id);
         

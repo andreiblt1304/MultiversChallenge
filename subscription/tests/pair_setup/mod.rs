@@ -3,13 +3,13 @@
 use std::{cell::RefCell, rc::Rc};
 extern crate subscription;
 use subscription::pair_actions;
-use multiversx_sc::types::{Address, ManagedAddress, MultiValueEncoded, EsdtLocalRole};
+use multiversx_sc::types::{Address, EsdtLocalRole};
 use multiversx_sc_scenario::{
     DebugApi, 
     testing_framework::{
-        BlockchainStateWrapper, ContractObjWrapper, TxTokenTransfer
+        BlockchainStateWrapper, ContractObjWrapper
     }, 
-    rust_biguint, managed_token_id, managed_address, managed_biguint
+    rust_biguint
 };
 
 pub struct PairSetup<PairObjBuilder>
@@ -41,7 +41,7 @@ where
         let pair_wrapper = 
             b_mock
                 .borrow_mut()
-                .create_sc_account(&rust_zero, Some(owner), pair_builder, "pair");;
+                .create_sc_account(&rust_zero, Some(owner), pair_builder, "pair");
 
             let lp_token_roles = [EsdtLocalRole::Mint, EsdtLocalRole::Burn];
             b_mock.borrow_mut().set_esdt_local_roles(
@@ -50,7 +50,7 @@ where
                 &lp_token_roles[..],
             );
     
-            let mut pair_setup = PairSetup {
+            let pair_setup = PairSetup {
                 b_mock: b_mock.clone(),
                 first_token_id: first_token_id.to_vec(),
                 second_token_id: second_token_id.to_vec(),
@@ -68,31 +68,9 @@ where
                 second_token_id,
                 &rust_biguint!(second_token_amount),
             );
-            pair_setup.add_liquidity(owner, first_token_amount, second_token_amount);
-    
-            let mut block_round = 1;
+            let block_round = 1;
             b_mock.borrow_mut().set_block_round(block_round);
     
         pair_setup
-    }
-
-    pub fn add_liquidity(
-        &mut self,
-        caller: &Address,
-        first_token_amount: u64,
-        second_token_amount: u64,
-    ) {
-        let payments = vec![
-            TxTokenTransfer {
-                token_identifier: self.first_token_id.clone(),
-                nonce: 0,
-                value: rust_biguint!(first_token_amount),
-            },
-            TxTokenTransfer {
-                token_identifier: self.second_token_id.clone(),
-                nonce: 0,
-                value: rust_biguint!(second_token_amount),
-            },
-        ];
     }
 }
