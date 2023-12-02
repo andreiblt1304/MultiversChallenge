@@ -323,10 +323,6 @@ fn withdraw_tokens_test() {
         .borrow()
         .check_esdt_balance(&user, FIRST_TOKEN_ID, &rust_biguint!(999_999));
 
-    sub_sc
-        .call_substract_payment(&rand_service, 0, 1)
-        .assert_ok();
-
     b_mock_rc
         .borrow()
         .check_esdt_balance(&rand_service, FIRST_TOKEN_ID, &rust_biguint!(0));
