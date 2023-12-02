@@ -1,0 +1,10 @@
+[package]
+name = "lottery-meta"
+version = "0.0.0"
+edition = "2021"
+publish = false
+[dependencies.lottery]
+path = ".."
+
+[dependencies.multiversx-sc-meta]
+version = "0.44.0"
