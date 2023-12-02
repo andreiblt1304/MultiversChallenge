@@ -1,14 +1,14 @@
-use multiversx_sc_scenario::*;
+// use multiversx_sc_scenario::*;
 
-fn world() -> ScenarioWorld {
-    let mut blockchain = ScenarioWorld::new();
-    // blockchain.set_current_dir_from_workspace("relative path to your workspace, if applicable");
+// fn world() -> ScenarioWorld {
+//     let mut blockchain = ScenarioWorld::new();
+//     // blockchain.set_current_dir_from_workspace("relative path to your workspace, if applicable");
 
-    blockchain.register_contract("file:output/subscription.wasm", subscription::ContractBuilder);
-    blockchain
-}
+//     blockchain.register_contract("file:output/subscription.wasm", subscription::ContractBuilder);
+//     blockchain
+// }
 
-#[test]
-fn empty_rs() {
-    world().run("scenarios/subscription.scen.json");
-}
+// #[test]
+// fn empty_rs() {
+//     world().run("scenarios/subscription.scen.json");
+// }

@@ -15,7 +15,7 @@ pub mod pair_proxy {
 }
 
 #[multiversx_sc::module]
-pub trait PairSafePriceActionsModule {
+pub trait PairActionsModule {
     #[only_owner]
     #[endpoint(addPair)]
     fn add_pair(

@@ -42,7 +42,7 @@ impl<T: NestedEncode + NestedDecode + TypeAbi, E: NestedEncode + NestedDecode + 
 pub trait SubstractPaymentsModule:
     crate::payments::payments::PaymentsModule
     + crate::service::ServiceModule
-    + crate::pair_safe_price_actions::PairSafePriceActionsModule
+    + crate::pair_actions::PairActionsModule
     //+ multiversx_sc_modules::ongoing_operation::OngoingOperationModule
 {
     #[endpoint(substractPayment)]

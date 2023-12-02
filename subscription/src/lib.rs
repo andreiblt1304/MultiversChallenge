@@ -2,7 +2,7 @@
 
 pub mod payments;
 pub mod service;
-pub mod pair_safe_price_actions;
+pub mod pair_actions;
 
 multiversx_sc::imports!();
 
@@ -10,7 +10,9 @@ multiversx_sc::imports!();
 pub trait Subscription:
     payments::payments::PaymentsModule
     + service::ServiceModule
-    + pair_safe_price_actions::PairSafePriceActionsModule   
+    + pair_actions::PairActionsModule
+    + payments::substract_payments::SubstractPaymentsModule
+    //+ crate::ongoing_operation::OngoingOperationModule
 {
     #[init]
     fn init(
@@ -23,7 +25,7 @@ pub trait Subscription:
             "Invalid price query address"
         );
 
-        //self.price_query_address().set(price_query_address);
+        self.price_query_address().set(price_query_address);
         self.add_accepted_payment_tokens(accepted_tokens);
     }
 }

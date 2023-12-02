@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           15
+// Endpoints:                           16
 // Async Callback (empty):               1
-// Total number of exported functions:  17
+// Total number of exported functions:  18
 
 #![no_std]
 
@@ -37,6 +37,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         addPair => add_pair
         removePair => remove_pair
         getSafePrice => get_safe_price
+        substractPayment => substract_payment
     )
 }
 
