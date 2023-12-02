@@ -224,3 +224,110 @@ fn substract_ok_test() {
         &rust_biguint!(30* 1000)
     );
 }
+
+#[test]
+fn try_subtract_twice_same_day() {
+    let (b_mock_rc, pair_setup, mut sub_sc) = 
+        init_all(|| pair_actions::contract_obj(), || subscription::contract_obj());
+
+    let rust_zero = rust_biguint!(0);
+
+    let rand_service = b_mock_rc.borrow_mut().create_user_account(&rust_zero);
+    sub_sc
+        .call_register_service(
+            &rand_service,
+            vec![(
+                pair_setup.pair_wrapper.address_ref().clone(),
+                Some(FIRST_TOKEN_ID.to_vec()),
+                1_000,
+            )],
+        )
+        .assert_ok();
+
+    let user = b_mock_rc.borrow_mut().create_user_account(&rust_zero);
+
+    b_mock_rc
+        .borrow_mut()
+        .set_esdt_balance(&user, FIRST_TOKEN_ID, &rust_biguint!(1000000));
+
+    sub_sc
+        .call_deposit(&user, FIRST_TOKEN_ID, 1000000)
+        .assert_ok();
+
+    sub_sc
+        .call_subscribe(&user, vec![(1, 0, SubscriptionType::Daily)])
+        .assert_ok();
+
+    b_mock_rc.borrow_mut().set_block_epoch(10);
+
+    sub_sc
+        .call_substract_payment(&rand_service, 0, 1)
+        .assert_ok();
+
+    b_mock_rc.borrow().check_esdt_balance(
+        &rand_service,
+        FIRST_TOKEN_ID,
+        &rust_biguint!(30 * 1_000),
+    );
+
+    sub_sc
+        .call_substract_payment(&rand_service, 0, 1)
+        .assert_user_error("Cannot substract the payment yet");
+
+    b_mock_rc.borrow().check_esdt_balance(
+        &rand_service,
+        FIRST_TOKEN_ID,
+        &rust_biguint!(30 * 1_000),
+    );
+}
+
+#[test]
+fn withdraw_tokens_test() {
+    let (b_mock_rc, pair_setup, mut sub_sc) = 
+        init_all(|| pair_actions::contract_obj(), || subscription::contract_obj());
+
+    let rust_zero = rust_biguint!(0);
+
+    let rand_service = b_mock_rc.borrow_mut().create_user_account(&rust_zero);
+    sub_sc
+        .call_register_service(
+            &rand_service,
+            vec![(
+                pair_setup.pair_wrapper.address_ref().clone(),
+                Some(FIRST_TOKEN_ID.to_vec()),
+                1_000,
+            )],
+        )
+        .assert_ok();
+
+    let user = b_mock_rc.borrow_mut().create_user_account(&rust_zero);
+    b_mock_rc
+        .borrow_mut()
+        .set_esdt_balance(&user, FIRST_TOKEN_ID, &rust_biguint!(1_000_000));
+
+    sub_sc
+        .call_deposit(&user, FIRST_TOKEN_ID, 1_000_000)
+        .assert_ok();
+
+    sub_sc
+        .call_subscribe(&user, vec![(1, 0, SubscriptionType::Daily)])
+        .assert_ok();
+
+    b_mock_rc.borrow_mut().set_block_epoch(10);
+
+    sub_sc
+        .call_withdraw_funds(&user, vec![(FIRST_TOKEN_ID.to_vec(), 999_999)])
+        .assert_ok();
+
+    b_mock_rc
+        .borrow()
+        .check_esdt_balance(&user, FIRST_TOKEN_ID, &rust_biguint!(999_999));
+
+    sub_sc
+        .call_substract_payment(&rand_service, 0, 1)
+        .assert_ok();
+
+    b_mock_rc
+        .borrow()
+        .check_esdt_balance(&rand_service, FIRST_TOKEN_ID, &rust_biguint!(0));
+}

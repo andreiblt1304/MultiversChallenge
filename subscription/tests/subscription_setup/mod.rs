@@ -1,8 +1,8 @@
 #![allow(deprecated)]
 
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, fmt::Debug};
 
-use multiversx_sc::{types::{MultiValueEncoded, EgldOrEsdtTokenIdentifier, Address, TokenIdentifier, ManagedAddress, BigUint}, codec::multi_types::MultiValue3, storage::mappers::AddressId};
+use multiversx_sc::{types::{MultiValueEncoded, EgldOrEsdtTokenIdentifier, Address, TokenIdentifier, ManagedAddress, BigUint}, codec::multi_types::{MultiValue3, MultiValue2}, storage::mappers::AddressId};
 use multiversx_sc_scenario::{testing_framework::{BlockchainStateWrapper, ContractObjWrapper, TxResult}, DebugApi, rust_biguint, managed_address, managed_token_id_wrapped, managed_biguint};
 use subscription::{self, Subscription, service::{ServiceModule, SubscriptionType}, payments::{payments::PaymentsModule, substract_payments::SubstractPaymentsModule}};
 
@@ -156,5 +156,33 @@ where
             |sc| {
                 let _ = sc.substract_payment(service_index, user_id);
             })
+    }
+
+    pub fn call_withdraw_funds(
+        &mut self,
+        caller: &Address,
+        tokens: Vec<(Vec<u8>, u64)>
+    ) -> TxResult {
+        self.b_mock
+            .borrow_mut()
+            .execute_tx(
+                caller,
+                &self.sub_wrapper,
+                &rust_biguint!(0),
+                |sc| {
+                    let mut tokens_to_withdraw = 
+                        MultiValueEncoded::<DebugApi, MultiValue2<EgldOrEsdtTokenIdentifier<DebugApi>, BigUint<DebugApi>>>::new();
+                    for token in tokens {
+                        tokens_to_withdraw.push(
+                            (
+                                managed_token_id_wrapped!(token.0),
+                                managed_biguint!(token.1)
+                            )
+                            .into()
+                        )
+                    }
+
+                    let _ = sc.withdraw(tokens_to_withdraw);
+                })
     }
 }
