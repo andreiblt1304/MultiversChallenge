@@ -10,6 +10,9 @@ path = "src/attacker.rs"
 [dependencies.multiversx-sc]
 version = "0.44.0"
 
+[dependencies.lottery]
+path = "../lottery"
+
 [dev-dependencies]
 num-bigint = "0.4.2"
 

@@ -2,18 +2,22 @@
 
 multiversx_sc::imports!();
 
-use crate::lottery_proxy;
+pub mod lottery_proxy;
 
-/// An empty contract. To be used as a template when starting a new contract from scratch.
 #[multiversx_sc::contract]
-pub trait Attacker {
+pub trait Attacker:
+    lottery_proxy::LotteryProxy
+{
     #[init]
-    fn init(&self) {}
+    fn init(
+        &self,
+        sc_address: ManagedAddress
+    ) {
+        require!(
+            self.blockchain().is_smart_contract(&sc_address),
+            "Invalid Lottery SC address"
+        );
 
-    #[payable("EGLD")]
-    #[endpoint(participate)]
-    fn participate(&self) {
-
-        //self.call
+        self.lottery_sc_address().set(&sc_address);
     }
 }

@@ -6,7 +6,8 @@ const ONE_EGLD: u64 = 1000000000000000000;
 const MAX_NR: u64 = 1500;
 
 #[multiversx_sc::contract]
-pub trait Lottery {
+pub trait Lottery
+{
     #[init]
     fn init(&self) {}
 
