@@ -8,7 +8,7 @@ pub const OWNER_EGLD_BALANCE: u64 = 150_000_000_000_000_000;
 
 use lottery::Lottery;
 use multiversx_sc::types::{ManagedAddress, Address};
-use multiversx_sc_scenario::{*, testing_framework::{BlockchainStateWrapper, ContractObjWrapper}};
+use multiversx_sc_scenario::{*, testing_framework::{BlockchainStateWrapper, ContractObjWrapper, TxResult}};
 
 pub struct LotterySetup<LotteryObjBuilder>
 where
@@ -42,5 +42,19 @@ where
             owner_address,
             lottery_wrapper,
         }
+    }
+
+    pub fn call_draw_winner(
+        &self,
+    ) -> TxResult {
+        self.b_mock
+            .borrow_mut()
+            .execute_tx(
+                &self.owner_address,
+                &self.lottery_wrapper,
+                &rust_biguint!(0), 
+                |sc| {
+                    sc.draw_winner()
+                })
     }
 }

@@ -54,8 +54,19 @@ fn withdraw_winner_endpoint_test() {
 
     let caller = b_mock_rc.borrow_mut().create_user_account(&rust_biguint!(1000000));
 
-    attacker_sc.call_draw_winner_endpoint(&caller, &attacker_sc.lottery_address).assert_ok();
+    attacker_sc.participate(&caller, &attacker_sc.lottery_address).assert_ok();
 
     b_mock_rc.borrow().check_egld_balance(&caller, &rust_biguint!(999999));
     b_mock_rc.borrow().check_egld_balance(&attacker_sc.lottery_address, &rust_biguint!(1));
+}
+
+#[test]
+fn draw_winner_test() {
+    let (b_mock_rc, attacker_sc, lottery_sc) = init_all(|| attacker::contract_obj(), || lottery::contract_obj());
+    let caller = b_mock_rc.borrow_mut().create_user_account(&rust_biguint!(1000000));
+
+    attacker_sc.participate(&caller, &attacker_sc.lottery_address).assert_ok();
+    lottery_sc.call_draw_winner().assert_ok();
+
+    b_mock_rc.borrow().check_egld_balance(&caller, &rust_biguint!(999999));
 }

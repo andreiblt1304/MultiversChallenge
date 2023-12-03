@@ -70,7 +70,7 @@ where
         }
     }
 
-    pub fn call_draw_winner_endpoint(
+    pub fn participate(
         &self,
         caller: &Address,
         lottery_sc_address: &Address
