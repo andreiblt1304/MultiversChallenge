@@ -9,9 +9,6 @@ use multiversx_sc_scenario::{testing_framework::{BlockchainStateWrapper, Contrac
 
 pub const ONE_EGLD: u64 = 1_000_000_000_000_000_000;
 pub const TEN_EGLD: u64 = 10_000_000_000_000_000_000;
-pub const THOUSAND_EGLD: u128 = 1_000_000_000_000_000_000_000;
-pub const TEN_THOUSAND_EGLD: u128 = 100_000_000_000_000_000_000_000;
-
 
 pub struct AttackerSetup<AttackerObjBuilder>
 where
@@ -38,7 +35,7 @@ where
     {
         let rust_zero = rust_biguint!(0);
         let attacker_wrapper = b_mock.borrow_mut().create_sc_account(
-            &rust_biguint!(THOUSAND_EGLD),
+            &(rust_biguint!(ONE_EGLD) * rust_biguint!(100)),
             Some(&owner_address),
             attacker_builder,
             "../output/attacker.wasm"
@@ -48,7 +45,7 @@ where
             b_mock
                 .borrow_mut()
                 .create_sc_account(
-                    &rust_zero,
+                    &(rust_biguint!(ONE_EGLD) * rust_biguint!(100)),
                     Some(&owner_address),
                     lottery_builder,
                     "../../lottery/output/lottery.wasm"
@@ -103,8 +100,10 @@ where
                 &self.attacker_wrapper,
                 &rust_biguint!(amount),
                 |sc| {
-                    sc.fund_lottery(BigUint::from(THOUSAND_EGLD), ManagedAddress::from(lottery_sc_address.clone()));
-                    sc.draw_winner_endpoint(ManagedAddress::from(lottery_sc_address.clone()), BigUint::from(amount));
+                    sc.draw_winner_endpoint(
+                        ManagedAddress::from(lottery_sc_address.clone()),
+                        BigUint::from(amount)
+                    );
                 })
     }
 }

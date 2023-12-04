@@ -11,7 +11,7 @@ pub trait Lottery
     #[init]
     fn init(&self) {}
 
-    #[only_owner]
+    //#[only_owner]
     #[payable("EGLD")]
     #[endpoint(drawWinner)]
     fn draw_winner(&self) {
@@ -31,7 +31,7 @@ pub trait Lottery
         if rand_nr < 1000 {
             let prize: BigUint = BigUint::from(100u32) * ONE_EGLD;
 
-            self.send().direct_egld(&caller, &BigUint::from(prize));
+            self.send().direct_egld(&caller, &prize);
             self.participants().clear();
         }
     }

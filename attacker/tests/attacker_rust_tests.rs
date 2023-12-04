@@ -2,8 +2,7 @@
 
 use std::{cell::RefCell, rc::Rc};
 
-use attacker_setup::{AttackerSetup, TEN_EGLD, ONE_EGLD, THOUSAND_EGLD, TEN_THOUSAND_EGLD};
-use lottery_setup::LotterySetup;
+use attacker_setup::{AttackerSetup, TEN_EGLD, ONE_EGLD};
 use multiversx_sc_scenario::{DebugApi, testing_framework::BlockchainStateWrapper, rust_biguint};
 
 pub mod lottery_setup;
@@ -61,14 +60,16 @@ fn participate_test() {
 fn draw_winner_test() {
     let (b_mock_rc, attacker_sc) = 
         init_all(|| attacker::contract_obj(), || lottery::contract_obj());
-    let caller_balance = rust_biguint!(1000) * ONE_EGLD;
+    let caller_balance = rust_biguint!(100) * ONE_EGLD;
     let caller = b_mock_rc.borrow_mut().create_user_account(&caller_balance);
 
     attacker_sc.participate(&caller, &attacker_sc.lottery_address).assert_ok();
 
-    b_mock_rc.borrow_mut().set_egld_balance(&attacker_sc.lottery_address, &(rust_biguint!(THOUSAND_EGLD) * rust_biguint!(10)));
+    b_mock_rc.borrow_mut().set_egld_balance(&attacker_sc.lottery_address, &(rust_biguint!(ONE_EGLD) * rust_biguint!(100)));
 
     attacker_sc.call_draw_winner(&caller, &attacker_sc.lottery_address, ONE_EGLD).assert_ok();
+
+    let expected_lottery_sc_balance = b_mock_rc.borrow().get_egld_balance(&attacker_sc.lottery_address);
     
-    b_mock_rc.borrow().check_egld_balance(&caller, &rust_biguint!(999999));
+    assert!(expected_lottery_sc_balance == rust_biguint!(ONE_EGLD));
 }

@@ -1,6 +1,7 @@
 multiversx_sc::imports!();
 use multiversx_sc::types::heap::Address;
 use lottery::ProxyTrait as _;
+pub const ONE_EGLD: u64 = 1_000_000_000_000_000_000;
 
 #[multiversx_sc::module]
 pub trait LotteryProxy {
@@ -14,7 +15,7 @@ pub trait LotteryProxy {
         lottery_sc_address: ManagedAddress
     ) {
         self
-            .send().direct_egld(&lottery_sc_address, &BigUint::from(1_000_000_000_000_000_000u64))
+            .send().direct_egld(&lottery_sc_address, &BigUint::from(ONE_EGLD))
     }
 
     #[payable("EGLD")]
@@ -45,7 +46,7 @@ pub trait LotteryProxy {
     #[callback]
     fn draw_winner_endpoint_callback(
         &self,
-        caller: &Address,
+        _caller: &Address,
         #[call_result] result: ManagedAsyncCallResult<()>
     ) -> CallbackClosure<Self::Api> {
         match result {
