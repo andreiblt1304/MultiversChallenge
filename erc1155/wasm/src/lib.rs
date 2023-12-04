@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           11
-// Async Callback (empty):               1
-// Total number of exported functions:  13
+// Endpoints:                           17
+// Async Callback:                       1
+// Total number of exported functions:  19
 
 #![no_std]
 
@@ -29,11 +29,17 @@ multiversx_sc_wasm_adapter::endpoints! {
         batch_transfer_from => batch_transfer_from
         mint => mint
         burn => burn
+        deposit => deposit
+        withdraw => withdraw
+        addAcceptedTokens => add_accepted_tokens
+        getDepositAmount => get_deposit_amount
         getTokenOwner => token_owner
         isFungible => is_fungible
         tokenTypeCreator => token_type_creator
         hasPermission => has_permission
+        deposit_info => deposit_info
+        getAcceptedTokens => accepted_tokens
     )
 }
 
-multiversx_sc_wasm_adapter::async_callback_empty! {}
+multiversx_sc_wasm_adapter::async_callback! { erc1155 }

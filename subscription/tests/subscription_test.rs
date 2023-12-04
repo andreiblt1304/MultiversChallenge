@@ -25,11 +25,14 @@ fn init_all<
     PairSetup<PairObjBuilder>,
     SubscriptionSetup<SubscriptionObjBuilder>
 ) {
-    let mut b_mock = BlockchainStateWrapper::new();
-    let owner = b_mock.create_user_account(&rust_biguint!(0));
-
+    let b_mock = BlockchainStateWrapper::new();
     let b_mock_ref = RefCell::new(b_mock);
     let b_mock_rc = Rc::new(b_mock_ref);
+
+    let owner = b_mock_rc
+        .borrow_mut()
+        .create_user_account(&rust_biguint!(0));
+
     let pair_setup = PairSetup::new(
         b_mock_rc.clone(),
         pair_builder,
@@ -49,9 +52,6 @@ fn init_all<
         vec![FIRST_TOKEN_ID.to_vec()]
     );
 
-    let owner = b_mock_rc
-        .borrow_mut()
-        .create_user_account(&rust_biguint!(0));
 
     b_mock_rc
         .borrow_mut()

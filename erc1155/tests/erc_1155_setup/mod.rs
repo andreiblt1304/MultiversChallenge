@@ -39,7 +39,8 @@ where
             &rust_zero,
             Some(owner_address),
             builder,
-            "Some path");
+            ERC1155_WASM_PATH
+        );
 
         b_mock
             .borrow_mut()
@@ -58,6 +59,8 @@ where
                         managed_args.push(EgldOrEsdtTokenIdentifier::esdt(token_id));
                     }
                 }
+
+                sc.init(managed_args);
             })
             .assert_ok();
 

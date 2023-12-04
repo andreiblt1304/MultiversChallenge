@@ -1,10 +1,12 @@
 #![allow(deprecated)]
-use std::{cell::RefCell, rc::Rc, borrow::BorrowMut};
+use std::{cell::RefCell, rc::Rc};
 
+use erc1155::Erc1155;
 use erc_1155_setup::Erc1155Setup;
+use multiversx_sc::types::MultiValueEncoded;
 use multiversx_sc_scenario::{self, DebugApi, testing_framework::BlockchainStateWrapper, rust_biguint, scenario_model::BigUintValue};
-static TOKEN_ID: &[u8] = b"MOCKTOKEN-123";
 
+static TOKEN_ID: &[u8] = b"MOCKTOKEN-123";
 mod erc_1155_setup;
 
 fn init_all<
@@ -15,11 +17,16 @@ fn init_all<
         Rc<RefCell<BlockchainStateWrapper>>,
         Erc1155Setup<Erc1155ObjBuilder>
     ) {
-    let mut b_mock = BlockchainStateWrapper::new();
-    let owner = b_mock.create_user_account(&rust_biguint!(0));
-    let b_mock_ref = RefCell::new(b_mock);
-    let b_mock_rc = Rc::new(b_mock_ref);
-    let erc_sc = Erc1155Setup::new(
+        let b_mock = BlockchainStateWrapper::new();   
+        let b_mock_ref = RefCell::new(b_mock);
+        let b_mock_rc = Rc::new(b_mock_ref);
+
+        let owner = b_mock_rc
+            .borrow_mut()
+            .create_user_account(&rust_biguint!(0));
+
+
+        let erc_sc = Erc1155Setup::new(
         b_mock_rc.clone(),
         erc_builder,
         &owner,
@@ -50,10 +57,10 @@ fn deposit_ok() {
     let (b_mock_rc, mut erc_sc) = 
         init_all(erc1155::contract_obj);
     let amount = 1000000;
-    let user = b_mock_rc.borrow().create_user_account(rust_zero);
+    let user = b_mock_rc.borrow_mut().create_user_account(rust_zero);
     
     b_mock_rc
-        .borrow()
+        .borrow_mut()
         .set_esdt_balance(&user, TOKEN_ID, &rust_biguint!(1000000));
 
     erc_sc.call_deposit(&user, TOKEN_ID, amount).assert_ok();
@@ -70,10 +77,10 @@ fn withdraw_ok() {
         init_all(erc1155::contract_obj);
 
     let amount = 1000000;
-    let user = b_mock_rc.borrow().create_user_account(rust_zero);
+    let user = b_mock_rc.borrow_mut().create_user_account(rust_zero);
     
     b_mock_rc
-        .borrow()
+        .borrow_mut()
         .set_esdt_balance(&user, TOKEN_ID, &rust_biguint!(1000000));
 
     erc_sc.call_deposit(&user, TOKEN_ID, amount).assert_ok();
