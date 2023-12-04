@@ -1,10 +1,8 @@
 #![allow(deprecated)]
 use std::{cell::RefCell, rc::Rc};
 
-use erc1155::Erc1155;
 use erc_1155_setup::Erc1155Setup;
-use multiversx_sc::types::MultiValueEncoded;
-use multiversx_sc_scenario::{self, DebugApi, testing_framework::BlockchainStateWrapper, rust_biguint, scenario_model::BigUintValue};
+use multiversx_sc_scenario::{self, DebugApi, testing_framework::BlockchainStateWrapper, rust_biguint};
 
 static TOKEN_ID: &[u8] = b"MOCKTOKEN-123";
 mod erc_1155_setup;
