@@ -4,11 +4,11 @@ use std::{cell::RefCell, rc::Rc};
 pub const ESDT_SYSTEM_SC_ADDRESS_ARRAY: [u8; 32] = multiversx_sc::hex_literal::hex!(
     "000000000000000000010000000000000000000000000000000000000002ffff"
 );
-pub const OWNER_EGLD_BALANCE: u64 = 150_000_000_000_000_000;
 
-use lottery::Lottery;
-use multiversx_sc::types::{ManagedAddress, Address};
-use multiversx_sc_scenario::{*, testing_framework::{BlockchainStateWrapper, ContractObjWrapper, TxResult}};
+use multiversx_sc::types::Address;
+use multiversx_sc_scenario::{*, testing_framework::{BlockchainStateWrapper, ContractObjWrapper}};
+
+use crate::attacker_setup::THOUSAND_EGLD;
 
 pub struct LotterySetup<LotteryObjBuilder>
 where
@@ -26,12 +26,12 @@ where
     pub fn new(
         b_mock: Rc<RefCell<BlockchainStateWrapper>>,
         builder: LotteryObjBuilder,
+        sc_address: &Address,
+        owner_address: Address
     ) -> Self {
-        let rust_zero = rust_biguint!(0);
-        let owner_address = b_mock.borrow_mut().create_user_account(&rust_biguint!(OWNER_EGLD_BALANCE));
         let lottery_wrapper = b_mock.borrow_mut().create_sc_account_fixed_address(
-            &Address::from(ESDT_SYSTEM_SC_ADDRESS_ARRAY),
-            &rust_zero,
+            &sc_address,
+            &rust_biguint!(THOUSAND_EGLD),
             Some(&owner_address),
             builder,
             "../../lottery/output/lottery.wasm"
@@ -42,19 +42,5 @@ where
             owner_address,
             lottery_wrapper,
         }
-    }
-
-    pub fn call_draw_winner(
-        &self,
-    ) -> TxResult {
-        self.b_mock
-            .borrow_mut()
-            .execute_tx(
-                &self.owner_address,
-                &self.lottery_wrapper,
-                &rust_biguint!(0), 
-                |sc| {
-                    sc.draw_winner()
-                })
     }
 }

@@ -1,11 +1,9 @@
 multiversx_sc::imports!();
-
+use multiversx_sc::types::heap::Address;
 use lottery::ProxyTrait as _;
 
 #[multiversx_sc::module]
-pub trait LotteryProxy<RequestResult>:
-    //crate::common_storage::CommonStorageModule
-{
+pub trait LotteryProxy {
     #[proxy]
     fn lottery_contract_proxy(&self, lottery_sc_address: ManagedAddress) -> lottery::Proxy<Self::Api>;
 
@@ -16,28 +14,49 @@ pub trait LotteryProxy<RequestResult>:
         lottery_sc_address: ManagedAddress
     ) {
         self
-            .send().direct_egld(&lottery_sc_address, &BigUint::from(1u64))
-            //.lottery_contract_proxy(lottery_sc_address.clone())
-            //.async_call()
-            // .with_callback(
-            //     self.callbacks()
-            //         .draw_winner_callback()
-            // )
-            //.call_and_exit();
+            .send().direct_egld(&lottery_sc_address, &BigUint::from(1_000_000_000_000_000_000u64))
     }
 
-    // #[callback]
-    // fn draw_winner_callback(
-    //     &self,
-    //     #[call_result] result: ManagedAsyncCallResult<()>
-    // ) { 
-    //     let amount = self.call_value().egld_value();
-    //     match result {
-    //         ManagedAsyncCallResult::Ok(()) => {
-                
-    //         }
-    //     }
-    // }
+    #[payable("EGLD")]
+    #[endpoint(drawWinnerEndpoint)]
+    fn draw_winner_endpoint(
+        &self,
+        lottery_sc_address: ManagedAddress,
+        amount: BigUint
+    ) {
+        self
+            .lottery_contract_proxy(lottery_sc_address)
+            .draw_winner()
+            .with_egld_transfer(amount)
+            .execute_on_dest_context()
+    }
+
+    #[payable("EGLD")]
+    #[endpoint]
+    fn fund_lottery(
+        &self,
+        amount: BigUint,
+        lottery_sc_address: ManagedAddress
+    ) {
+        self
+            .send().direct_egld(&lottery_sc_address, &amount);
+    }
+
+    #[callback]
+    fn draw_winner_endpoint_callback(
+        &self,
+        caller: &Address,
+        #[call_result] result: ManagedAsyncCallResult<()>
+    ) -> CallbackClosure<Self::Api> {
+        match result {
+            ManagedAsyncCallResult::Ok(()) => {
+                CallbackClosure::<Self::Api>::new("callback_name")
+            }
+            ManagedAsyncCallResult::Err(_) => {
+                CallbackClosure::<Self::Api>::new("callback_name")
+            }
+        }
+    }
 
     #[view(getLotteryScAddress)]
     #[storage_mapper("lotteryScAddress")]

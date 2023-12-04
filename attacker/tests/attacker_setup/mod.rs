@@ -1,13 +1,19 @@
-#![allow(deprecated)]
+//#![allow(deprecated)]
 
 use std::{cell::RefCell, rc::Rc};
 
 use attacker::{Attacker, lottery_proxy::LotteryProxy};
 use lottery::Lottery;
-use multiversx_sc::types::Address;
+use multiversx_sc::types::{Address, ManagedAddress, BigUint};
 use multiversx_sc_scenario::{testing_framework::{BlockchainStateWrapper, ContractObjWrapper, TxResult}, DebugApi, rust_biguint};
 
 use crate::lottery_setup::*;
+
+pub const ONE_EGLD: u64 = 1_000_000_000_000_000_000;
+pub const TEN_EGLD: u64 = 10_000_000_000_000_000_000;
+pub const THOUSAND_EGLD: u128 = 1_000_000_000_000_000_000_000;
+pub const TEN_THOUSAND_EGLD: u128 = 100_000_000_000_000_000_000_000;
+
 
 pub struct AttackerSetup<AttackerObjBuilder>
 where
@@ -34,7 +40,7 @@ where
     {
         let rust_zero = rust_biguint!(0);
         let attacker_wrapper = b_mock.borrow_mut().create_sc_account(
-            &rust_zero,
+            &rust_biguint!(THOUSAND_EGLD),
             Some(&owner_address),
             attacker_builder,
             "../output/attacker.wasm"
@@ -47,7 +53,7 @@ where
                     &rust_zero,
                     Some(&owner_address),
                     lottery_builder,
-                    "lottery path"
+                    "../../lottery/output/lottery.wasm"
                 );
 
         b_mock
@@ -80,9 +86,27 @@ where
             .execute_tx(
                 caller, 
                 &self.attacker_wrapper, 
-                &rust_biguint!(1), 
+                &rust_biguint!(ONE_EGLD), 
                 |sc| {
                     sc.participate(lottery_sc_address.clone().into());
+                })
+    }
+
+    pub fn call_draw_winner(
+        &self,
+        caller: &Address,
+        lottery_sc_address: &Address,
+        amount: u64
+    ) -> TxResult {
+        self.b_mock
+            .borrow_mut()
+            .execute_tx(
+                caller,
+                &self.attacker_wrapper,
+                &rust_biguint!(amount),
+                |sc| {
+                    sc.fund_lottery(BigUint::from(THOUSAND_EGLD), ManagedAddress::from(lottery_sc_address.clone()));
+                    sc.draw_winner_endpoint(ManagedAddress::from(lottery_sc_address.clone()), BigUint::from(amount));
                 })
     }
 }

@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                            2
-// Async Callback (empty):               1
-// Total number of exported functions:   4
+// Endpoints:                            3
+// Async Callback:                       1
+// Total number of exported functions:   5
 
 #![no_std]
 
@@ -22,9 +22,10 @@ multiversx_sc_wasm_adapter::endpoints! {
     attacker
     (
         init => init
-        participate => draw_winner_endpoint
+        participate => participate
+        drawWinnerEndpoint => draw_winner_endpoint
         getLotteryScAddress => lottery_sc_address
     )
 }
 
-multiversx_sc_wasm_adapter::async_callback_empty! {}
+multiversx_sc_wasm_adapter::async_callback! { attacker }

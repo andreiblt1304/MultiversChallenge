@@ -15,6 +15,8 @@ pub trait Lottery
     #[endpoint(drawWinner)]
     fn draw_winner(&self) {
         let payment = self.call_value().egld_value().clone_value();
+        let _balance = self.blockchain().get_balance(&self.blockchain().get_sc_address());
+        let _address = self.blockchain().get_sc_address();
         require!(payment == ONE_EGLD, "Invalid payment");
         let mut rand_source = RandomnessSource::new();
         let rand_nr = rand_source.next_u64_in_range(1, MAX_NR);
