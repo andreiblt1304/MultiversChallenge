@@ -3,11 +3,9 @@
 use std::{cell::RefCell, rc::Rc};
 
 use attacker::{Attacker, lottery_proxy::LotteryProxy};
-use lottery::Lottery;
 use multiversx_sc::types::{Address, ManagedAddress, BigUint};
 use multiversx_sc_scenario::{testing_framework::{BlockchainStateWrapper, ContractObjWrapper, TxResult}, DebugApi, rust_biguint};
 
-use crate::lottery_setup::*;
 
 pub const ONE_EGLD: u64 = 1_000_000_000_000_000_000;
 pub const TEN_EGLD: u64 = 10_000_000_000_000_000_000;

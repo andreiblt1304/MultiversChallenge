@@ -18,14 +18,12 @@ fn init_all<
 ) -> (
     Rc<RefCell<BlockchainStateWrapper>>,
     AttackerSetup<AttackerObjBuilder>,
-    LotterySetup<LotteryObjBuilder>
 ) {
-    let mut b_mock = BlockchainStateWrapper::new();
+    let b_mock = BlockchainStateWrapper::new();
     let b_mock_ref = RefCell::new(b_mock);
     let b_mock_rc = Rc::new(b_mock_ref);
 
     let attacker_owner = b_mock_rc.borrow_mut().create_user_account(&rust_biguint!(0));
-    let lottery_owner = b_mock_rc.borrow_mut().create_user_account(&rust_biguint!(0));
 
     let attacker_sc = AttackerSetup::new(
         b_mock_rc.clone(),
@@ -34,17 +32,7 @@ fn init_all<
         &attacker_owner,
     );
 
-    //attacker_sc.lot
-
-    let lottery_sc = LotterySetup::new(
-        b_mock_rc.clone(),
-        lottery_builder,
-        &attacker_sc.lottery_address,
-        lottery_owner,
-        
-    );
-
-    (b_mock_rc, attacker_sc, lottery_sc)
+    (b_mock_rc, attacker_sc)
 }
 
 #[test]
@@ -54,7 +42,7 @@ fn init_test() {
 
 #[test]
 fn participate_test() {
-    let (b_mock_rc, attacker_sc, lottery_sc) = 
+    let (b_mock_rc, attacker_sc) = 
         init_all(|| attacker::contract_obj(), || lottery::contract_obj());
 
     let caller_balance = rust_biguint!(10) * ONE_EGLD;
@@ -67,12 +55,11 @@ fn participate_test() {
 
     b_mock_rc.borrow().check_egld_balance(&caller, &rust_biguint!(TEN_EGLD - ONE_EGLD));
     assert!(sc_balance_before_participating < sc_balance_after_participating);
-    // b_mock_rc.borrow().check_egld_balance(&attacker_sc.lottery_address, &rust_biguint!(ONE_EGLD));
 }
 
 #[test]
 fn draw_winner_test() {
-    let (b_mock_rc, attacker_sc, lottery_sc) = 
+    let (b_mock_rc, attacker_sc) = 
         init_all(|| attacker::contract_obj(), || lottery::contract_obj());
     let caller_balance = rust_biguint!(1000) * ONE_EGLD;
     let caller = b_mock_rc.borrow_mut().create_user_account(&caller_balance);
