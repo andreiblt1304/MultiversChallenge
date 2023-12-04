@@ -2,9 +2,8 @@ use multiversx_sc_scenario::*;
 
 fn world() -> ScenarioWorld {
     let mut blockchain = ScenarioWorld::new();
-    // blockchain.set_current_dir_from_workspace("relative path to your workspace, if applicable");
 
-    blockchain.register_contract("file:output/erc1155.wasm", erc1155::ContractBuilder);
+    blockchain.register_contract("file:output/erc_1155.wasm", erc1155::ContractBuilder);
     blockchain
 }
 

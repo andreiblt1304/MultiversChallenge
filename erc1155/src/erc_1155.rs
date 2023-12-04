@@ -1,5 +1,3 @@
-//TODO
-
 #![no_std]
 #![allow(clippy::type_complexity)]
 
@@ -83,7 +81,6 @@ pub trait Erc1155 {
         self.try_balance_fungible(&from, &type_id, &amount);
 
         if self.blockchain().is_smart_contract(&to) {
-            // TODO maybe add some async call and callback
             self.execute_call_fungible_single_transfer(from, to, type_id, amount, data);
         } else {
             self.modify_balance_after_transfer(&from, &to, &type_id, &amount);
@@ -101,7 +98,6 @@ pub trait Erc1155 {
     ) {
         self.try_balance_nonfungible(&from, &type_id, &nft_id);
 
-        //self.execute_call_nonfungible_single_transfer(&to, &type_id, &nft_id);
         self.increase_balance(&to, &type_id, &BigUint::from(1u32));
         self.token_owner(&type_id, &nft_id).set(&to);
 
@@ -196,7 +192,9 @@ pub trait Erc1155 {
         let payments = self.call_value().all_esdt_transfers();
         for payment in payments.iter() {
             require!(payment.amount > 0, "No payment");    
-            self.increase_esdt_balance(self.deposited_tokens(&address), &payment.amount);
+            let (token_id,nonce, amount) = payment.into_tuple();
+            self.increase_esdt_balance(self.deposited_tokens(&address), &amount);
+            self.send().direct_esdt(&ManagedAddress::from(&address), &token_id, nonce, &amount);
         }
     }
 
@@ -207,7 +205,6 @@ pub trait Erc1155 {
     ) {
         let caller = self.blockchain().get_caller();
         let mut output_payments = ManagedVec::<Self::Api, EsdtTokenPayment<Self::Api>>::new();
-        //let sc_address = self.blockchain().is_smart_contract()
         for token in tokens_to_withdraw {
             output_payments.push(EsdtTokenPayment::new(
                 token.token_identifier,
@@ -215,7 +212,6 @@ pub trait Erc1155 {
                 token.amount.clone()
             ));
 
-            //self.decrease_esdt_balance(self.deposited_tokens(address), &token.amount);
             self.send().direct_multi(&caller, &output_payments);
         }
     }
@@ -424,7 +420,6 @@ pub trait Erc1155 {
     fn get_deposit_amount(&self) -> BigUint {
         let caller = self.blockchain().get_caller();
 
-        //self.deposit().get()
         BigUint::from(1u32)
     }
 
@@ -463,7 +458,4 @@ pub trait Erc1155 {
     #[view(getAcceptedTokens)]
     #[storage_mapper("acceptedTokens")]
     fn accepted_tokens(&self) -> UnorderedSetMapper<EgldOrEsdtTokenIdentifier>;
-
-    // #[view(getUserDepositedEgld)]
-    // fn user_deposited_history(&self, caller: &Address) -> SingleValueMapper<EsdtTokenPaymentMultiArg<Self::Api>> {}
 }
