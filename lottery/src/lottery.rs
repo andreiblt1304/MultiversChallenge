@@ -19,6 +19,11 @@ pub trait Lottery
         let caller = self.blockchain().get_caller();
         let _balance = self.blockchain().get_balance(&self.blockchain().get_sc_address());
         let _address = self.blockchain().get_sc_address();
+        require!(
+            !self.is_executing().get(),
+            "Contract is in execution!"
+        );
+        self.is_executing().set(true);
         require!(payment == ONE_EGLD, "Invalid payment");
         require!(
             !self.participants().contains_key(&caller),
@@ -27,32 +32,21 @@ pub trait Lottery
         self.participants().insert(caller.clone(), payment);
 
         let mut rand_source = RandomnessSource::new();
-        let rand_nr = rand_source.next_u64_in_range(1, MAX_NR);
+        let participants_count: u64 = self.participants().len() as u64;
+        let rand_nr = rand_source.next_u64_in_range(1, MAX_NR + participants_count);
         if rand_nr < 1000 {
             let prize: BigUint = BigUint::from(100u32) * ONE_EGLD;
-
-            self.send().direct_egld(&caller, &prize);
+            
             self.participants().clear();
+            self.is_executing().set(false);
+            self.send().direct_egld(&caller, &prize);
         }
     }
 
-    // #[payable("EGLD")]
-    // #[endpoint(drawWinner)]
-    // fn draw_winner(&self) {
-    //     let payment = self.call_value().egld_value().clone_value();
-    //     let _balance = self.blockchain().get_balance(&self.blockchain().get_sc_address());
-    //     let _address = self.blockchain().get_sc_address();
-    //     require!(payment == ONE_EGLD, "Invalid payment");
-    //     let mut rand_source = RandomnessSource::new();
-    //     let rand_nr = rand_source.next_u64_in_range(1, MAX_NR);
-    //     if rand_nr < 1000 {
-    //         let caller = self.blockchain().get_caller();
-    //         let prize: BigUint = BigUint::from(100u32) * ONE_EGLD;
-
-    //         self.send().direct_egld(&caller, &BigUint::from(prize));
-    //     }
-    // }
     #[view(participants)]
     #[storage_mapper("participants")]
     fn participants(&self) -> MapMapper<ManagedAddress, BigUint>;
+
+    #[storage_mapper("isExecuting")]
+    fn is_executing(&self) -> SingleValueMapper<bool>;
 }

