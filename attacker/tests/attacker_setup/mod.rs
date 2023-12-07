@@ -66,35 +66,35 @@ where
         }
     }
 
-    pub fn participate(&self, caller: &Address, lottery_sc_address: &Address) -> TxResult {
+    pub fn call_participate(&self, caller: &Address, lottery_sc_address: &Address, amount: u64) -> TxResult {
         self.b_mock.borrow_mut().execute_tx(
             caller,
             &self.attacker_wrapper,
             &rust_biguint!(ONE_EGLD),
             |sc| {
-                sc.participate(lottery_sc_address.clone().into());
+                sc.participate(lottery_sc_address.clone().into(), BigUint::from(amount));
             },
         )
     }
 
-    pub fn call_draw_winner(
-        &self,
-        caller: &Address,
-        lottery_sc_address: &Address,
-        amount: u64,
-    ) -> TxResult {
-        self.b_mock.borrow_mut().execute_tx(
-            caller,
-            &self.attacker_wrapper,
-            &rust_biguint!(amount),
-            |sc| {
-                sc.draw_winner_endpoint(
-                    ManagedAddress::from(lottery_sc_address.clone()),
-                    BigUint::from(amount),
-                );
-            },
-        )
-    }
+    // pub fn call_draw_winner(
+    //     &self,
+    //     caller: &Address,
+    //     lottery_sc_address: &Address,
+    //     amount: u64,
+    // ) -> TxResult {
+    //     self.b_mock.borrow_mut().execute_tx(
+    //         caller,
+    //         &self.attacker_wrapper,
+    //         &rust_biguint!(amount),
+    //         |sc| {
+    //             sc.draw_winner_endpoint(
+    //                 ManagedAddress::from(lottery_sc_address.clone()),
+    //                 BigUint::from(amount),
+    //             );
+    //         },
+    //     )
+    // }
 
     pub fn call_attacker_async(
         &self,

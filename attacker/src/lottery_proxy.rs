@@ -3,7 +3,8 @@ use lottery::ProxyTrait as _;
 pub const ONE_EGLD: u64 = 1_000_000_000_000_000_000;
 
 #[multiversx_sc::module]
-pub trait LotteryProxy {
+pub trait LotteryProxy<RequestedResult>
+{
     #[proxy]
     fn lottery_contract_proxy(
         &self,
@@ -12,18 +13,11 @@ pub trait LotteryProxy {
 
     #[payable("*EGLD")]
     #[endpoint(participate)]
-    fn participate(&self, lottery_sc_address: ManagedAddress) {
-        self.send()
-            .direct_egld(&lottery_sc_address, &BigUint::from(ONE_EGLD))
-    }
-
-    #[payable("EGLD")]
-    #[endpoint(drawWinnerEndpoint)]
-    fn draw_winner_endpoint(&self, lottery_sc_address: ManagedAddress, amount: BigUint) {
-        self.lottery_contract_proxy(lottery_sc_address)
-            .draw_winner()
+    fn participate(&self, lottery_sc_address: ManagedAddress, amount: BigUint) {
+        let _result: bool = self.lottery_contract_proxy(lottery_sc_address)
+            .participate()
             .with_egld_transfer(amount)
-            .execute_on_dest_context()
+            .execute_on_dest_context();
     }
 
     #[payable("EGLD")]

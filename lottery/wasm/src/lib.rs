@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                            2
+// Endpoints:                            4
 // Async Callback (empty):               1
-// Total number of exported functions:   4
+// Total number of exported functions:   6
 
 #![no_std]
 
@@ -23,6 +23,8 @@ multiversx_sc_wasm_adapter::endpoints! {
     (
         init => init
         drawWinner => draw_winner
+        participate => participate
+        reedem_prize => reedem_prize
         participants => participants
     )
 }

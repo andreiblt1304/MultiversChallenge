@@ -3,11 +3,9 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 const ONE_EGLD: u64 = 1000000000000000000;
-const MAX_NR: u64 = 1500;
 
 #[multiversx_sc::contract]
-pub trait Lottery
-{
+pub trait Lottery {
     #[init]
     fn init(&self) {}
 
@@ -15,33 +13,75 @@ pub trait Lottery
     #[payable("EGLD")]
     #[endpoint(drawWinner)]
     fn draw_winner(&self) {
-        let payment = self.call_value().egld_value().clone_value();
-        let caller = self.blockchain().get_caller();
-        let _balance = self.blockchain().get_balance(&self.blockchain().get_sc_address());
-        let _address = self.blockchain().get_sc_address();
-        require!(
-            !self.is_executing().get(),
-            "Contract is in execution!"
-        );
+        require!(!self.is_executing().get(), "Contract is in execution!");
         self.is_executing().set(true);
-        require!(payment == ONE_EGLD, "Invalid payment");
-        require!(
-            !self.participants().contains_key(&caller),
-            "A participant can only send funds once"
-        );
-        self.participants().insert(caller.clone(), payment);
 
         let mut rand_source = RandomnessSource::new();
         let participants_count: u64 = self.participants().len() as u64;
-        let rand_nr = rand_source.next_u64_in_range(1, MAX_NR + participants_count);
-        if rand_nr < 1000 {
-            let prize: BigUint = BigUint::from(100u32) * ONE_EGLD;
-            
-            self.participants().clear();
+        if participants_count == 1 {
             self.is_executing().set(false);
-            self.send().direct_egld(&caller, &prize);
+            require!(
+                participants_count > 1,
+                "There should be more than 1 participants"
+            );
+        }
+        let rand_index = rand_source.next_u64_in_range(0, participants_count);
+
+        for (index, participant) in self.participants().iter().enumerate() {
+            if index == rand_index.try_into().unwrap() {
+                self.winner().set(participant.0);
+                break;
+            }
         }
     }
+
+    #[payable("EGLD")]
+    #[endpoint(participate)]
+    fn participate(&self) -> bool {
+        let caller = self.blockchain().get_caller();
+        let call_value = self.call_value().egld_value().clone_value();
+        require!(
+            !self.is_executing().get(),
+            "The lottery is in progress, you can't participate now"
+        );
+
+        require!(
+            !(call_value < ONE_EGLD),
+            "Minimum participation value is one EGLD"
+        );
+
+        require!(
+            !self.participants().contains_key(&caller),
+            "You are allowed to participate only once"
+        );
+
+        self.participants().insert(caller, call_value);
+
+        return true;
+    }
+
+    #[payable("EGLD")]
+    #[endpoint]
+    fn reedem_prize(&self, prize: BigUint) {
+        let caller = self.blockchain().get_caller();
+
+        require!(
+            !self.participants().is_empty() || !self.is_executing().get(),
+            "The lottery is still in progress"
+        );
+
+        require!(
+            caller == self.winner().get(),
+            "You are not the winner of the lottery"
+        );
+
+        self.participants().clear();
+        self.is_executing().set(false);
+        self.send().direct_egld(&caller, &prize);
+    }
+
+    #[storage_mapper("winner")]
+    fn winner(&self) -> SingleValueMapper<ManagedAddress>;
 
     #[view(participants)]
     #[storage_mapper("participants")]
