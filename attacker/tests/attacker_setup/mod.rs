@@ -77,24 +77,33 @@ where
         )
     }
 
-    // pub fn call_draw_winner(
-    //     &self,
-    //     caller: &Address,
-    //     lottery_sc_address: &Address,
-    //     amount: u64,
-    // ) -> TxResult {
-    //     self.b_mock.borrow_mut().execute_tx(
-    //         caller,
-    //         &self.attacker_wrapper,
-    //         &rust_biguint!(amount),
-    //         |sc| {
-    //             sc.draw_winner_endpoint(
-    //                 ManagedAddress::from(lottery_sc_address.clone()),
-    //                 BigUint::from(amount),
-    //             );
-    //         },
-    //     )
-    // }
+    pub fn call_draw_winner(
+        &self,
+        owner_address: &Address,
+        lottery_sc_address: &Address
+    ) -> TxResult {
+        self.b_mock.borrow_mut().execute_tx(
+            owner_address,
+            &self.attacker_wrapper,
+            &rust_biguint!(0),
+            |sc| {
+                sc.draw_winner(lottery_sc_address.clone().into());
+            })
+    }
+
+    pub fn call_get_prize(
+        &self,
+        caller: &Address,
+        lottery_sc_address: &Address,
+    ) -> TxResult {
+        self.b_mock.borrow_mut().execute_tx(
+            caller,
+            &self.attacker_wrapper,
+            &rust_biguint!(0),
+            |sc| {
+                sc.reedem_prize(lottery_sc_address.clone().into())
+            })
+    }
 
     pub fn call_attacker_async(
         &self,

@@ -1,6 +1,7 @@
 multiversx_sc::imports!();
-use lottery::ProxyTrait as _;
+//use lottery::ProxyTrait as _;
 pub const ONE_EGLD: u64 = 1_000_000_000_000_000_000;
+//use lottery::ProxyTrait;
 
 #[multiversx_sc::module]
 pub trait LotteryProxy<RequestedResult>
@@ -33,6 +34,21 @@ pub trait LotteryProxy<RequestedResult>
             .call_and_exit()
     }
 
+    #[payable("EGLD")]
+    #[endpoint(redeemPrize)]
+    fn reedem_prize(&self, lottery_sc_address: ManagedAddress) {
+        let _result: () = self.lottery_contract_proxy(lottery_sc_address.clone())
+            .reedem_prize()
+            .execute_on_dest_context();
+    } 
+
+    #[endpoint(drawWinner)]
+    fn draw_winner(&self, lottery_sc_address: ManagedAddress) {
+        let _result: () = self.lottery_contract_proxy(lottery_sc_address)
+            .draw_winner()
+            .execute_on_dest_context();
+    }
+    
     #[callback]
     fn attacker_callback(
         &self,
@@ -40,14 +56,14 @@ pub trait LotteryProxy<RequestedResult>
         #[call_result] result: ManagedAsyncCallResult<()>,
     ) -> () {
         match result {
-            ManagedAsyncCallResult::Ok(value) => {
+            ManagedAsyncCallResult::Ok(()) => {
                 let _ = self.lottery_contract_proxy(address.clone())
                     .draw_winner()
                     .with_egld_transfer(BigUint::from(ONE_EGLD));
             }
             ManagedAsyncCallResult::Err(value) => {
                 let panic_message = value.err_msg;
-                panic!("{}", panic_message);
+                panic!("{:?}", panic_message);
             }
         }
     }

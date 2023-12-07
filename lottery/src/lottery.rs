@@ -9,7 +9,7 @@ pub trait Lottery {
     #[init]
     fn init(&self) {}
 
-    //#[only_owner]
+    // #[only_owner]
     #[payable("EGLD")]
     #[endpoint(drawWinner)]
     fn draw_winner(&self) {
@@ -62,22 +62,58 @@ pub trait Lottery {
 
     #[payable("EGLD")]
     #[endpoint]
-    fn reedem_prize(&self, prize: BigUint) {
+    fn reedem_prize(&self) {
         let caller = self.blockchain().get_caller();
-
         require!(
-            !self.participants().is_empty() || !self.is_executing().get(),
+            self.participants().is_empty() || !self.is_executing().get(),
             "The lottery is still in progress"
         );
 
         require!(
-            caller == self.winner().get(),
+            self.get_winner() == None,
+            "There was no winner nomitated"
+        );
+
+        require!(
+            self.is_winner(&caller),
             "You are not the winner of the lottery"
         );
+
+        require!(
+            self.participants().len() > 1,
+            "There is only one participant!"
+        );
+
+        let prize = self.calculate_prize();
 
         self.participants().clear();
         self.is_executing().set(false);
         self.send().direct_egld(&caller, &prize);
+    }
+
+    fn calculate_prize(&self) -> BigUint {
+        let mut prize: BigUint = BigUint::from(0u64);
+
+        for participant in &self.participants() {
+            prize += participant.1 
+        }
+
+        return BigUint::from(prize);
+    }
+
+    fn is_winner(&self, caller: &ManagedAddress) -> bool {
+        match self.get_winner() {
+            Some(ref winner_address) => winner_address == caller,
+            None => false
+        }
+    }
+
+    fn get_winner(&self) -> Option<ManagedAddress> {
+        if self.winner().is_empty() {
+            None
+        } else {
+            Some(self.winner().get())
+        }
     }
 
     #[storage_mapper("winner")]

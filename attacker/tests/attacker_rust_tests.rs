@@ -3,8 +3,8 @@
 use std::{cell::RefCell, rc::Rc};
 
 use attacker_setup::{AttackerSetup, ONE_EGLD, TEN_EGLD};
+use multiversx_sc::{types::Address, hex_literal};
 use multiversx_sc_scenario::{rust_biguint, testing_framework::BlockchainStateWrapper, DebugApi};
-use num_bigint::BigUint;
 
 pub mod attacker_setup;
 pub mod lottery_setup;
@@ -67,8 +67,82 @@ fn participating_tests_setup() {
     assert!(sc_balance_before_participating < sc_balance_after_participating);
 }
 
+#[test]
+fn reedem_prize_one_participant() {
+    let (b_mock_rc, attacker_sc) =
+        init_all(|| attacker::contract_obj(), || lottery::contract_obj());
 
+    let caller_balance = rust_biguint!(10) * ONE_EGLD;
+    let caller = b_mock_rc.borrow_mut().create_user_account(&caller_balance);
+    let amount_to_send = ONE_EGLD;
 
+    attacker_sc
+        .call_participate(&caller, &attacker_sc.lottery_address, amount_to_send)
+        .assert_ok();
+
+    attacker_sc
+        .call_draw_winner(&attacker_sc.owner_address, &attacker_sc.lottery_address)
+        .assert_error(4, "There should be more than 1 participants");
+}
+
+#[test]
+fn reedem_prize_two_participants() {
+    let (b_mock_rc, attacker_sc) =
+        init_all(|| attacker::contract_obj(), || lottery::contract_obj());
+        
+    let first_caller_balance = rust_biguint!(10) * ONE_EGLD;
+    let first_caller = b_mock_rc.borrow_mut().create_user_account( &first_caller_balance); 
+    let first_amount_to_send = ONE_EGLD;
+
+    let second_caller_balance = rust_biguint!(10) * ONE_EGLD;
+    let second_caller = b_mock_rc.borrow_mut().create_user_account( &second_caller_balance);
+    let second_amount_to_send = ONE_EGLD;
+
+    attacker_sc
+        .call_participate(&first_caller, &attacker_sc.lottery_address,first_amount_to_send)
+        .assert_ok();
+
+    b_mock_rc.borrow_mut().set_egld_balance(&attacker_sc.owner_address, &(rust_biguint!(10) * ONE_EGLD));
+
+    attacker_sc
+        .call_participate(&attacker_sc.owner_address, &attacker_sc.lottery_address, second_amount_to_send)
+        .assert_ok();
+
+    attacker_sc
+        .call_draw_winner(&attacker_sc.owner_address, &attacker_sc.lottery_address)
+        .assert_error(4, "There should be more than 1 participants");
+   
+}
+
+#[test]
+fn attack() {
+    let (b_mock_rc, attacker_sc) =
+        init_all(|| attacker::contract_obj(), || lottery::contract_obj());
+    let caller_balance = rust_biguint!(10) * ONE_EGLD;
+    let caller = b_mock_rc.borrow_mut().create_user_account(&caller_balance);
+    let amount_to_send = ONE_EGLD;
+
+    attacker_sc
+        .call_participate(&caller, &attacker_sc.lottery_address, amount_to_send)
+        .assert_ok();
+
+    attacker_sc
+        .call_attacker_async(&caller, &attacker_sc.lottery_address, amount_to_send)
+        .assert_ok();
+
+    let sc_balance_before_participating = b_mock_rc
+        .borrow()
+        .get_egld_balance(&attacker_sc.lottery_address);
+    
+    let sc_balance_after_participating = b_mock_rc
+        .borrow()
+        .get_egld_balance(&attacker_sc.lottery_address);
+
+    b_mock_rc
+        .borrow()
+        .check_egld_balance(&caller, &rust_biguint!(TEN_EGLD - ONE_EGLD));
+    assert!(sc_balance_before_participating < sc_balance_after_participating);
+}
 // #[test]
 // fn draw_winner_test() {
 //     let (b_mock_rc, attacker_sc) =
