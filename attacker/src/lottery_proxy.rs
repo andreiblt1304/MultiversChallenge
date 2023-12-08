@@ -14,9 +14,9 @@ pub trait LotteryProxy<RequestedResult>
 
     #[payable("*EGLD")]
     #[endpoint(participate)]
-    fn participate(&self, lottery_sc_address: ManagedAddress, amount: BigUint) {
+    fn participate(&self, participant: ManagedAddress, lottery_sc_address: ManagedAddress, amount: BigUint) {
         let _result: bool = self.lottery_contract_proxy(lottery_sc_address)
-            .participate()
+            .participate(participant)
             .with_egld_transfer(amount)
             .execute_on_dest_context();
     }
@@ -36,9 +36,9 @@ pub trait LotteryProxy<RequestedResult>
 
     #[payable("EGLD")]
     #[endpoint(redeemPrize)]
-    fn reedem_prize(&self, lottery_sc_address: ManagedAddress) {
+    fn redeem_prize(&self, participant: ManagedAddress, lottery_sc_address: ManagedAddress) {
         let _result: () = self.lottery_contract_proxy(lottery_sc_address.clone())
-            .reedem_prize()
+            .redeem_prize(participant)
             .execute_on_dest_context();
     } 
 
@@ -57,9 +57,9 @@ pub trait LotteryProxy<RequestedResult>
     ) -> () {
         match result {
             ManagedAsyncCallResult::Ok(()) => {
-                let _ = self.lottery_contract_proxy(address.clone())
+                let _result: () = self.lottery_contract_proxy(address.clone())
                     .draw_winner()
-                    .with_egld_transfer(BigUint::from(ONE_EGLD));
+                    .execute_on_dest_context();
             }
             ManagedAsyncCallResult::Err(value) => {
                 let panic_message = value.err_msg;

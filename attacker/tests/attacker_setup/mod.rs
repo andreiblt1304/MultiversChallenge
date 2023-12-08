@@ -66,13 +66,13 @@ where
         }
     }
 
-    pub fn call_participate(&self, caller: &Address, lottery_sc_address: &Address, amount: u64) -> TxResult {
+    pub fn call_participate(&self, participant: &Address, lottery_sc_address: &Address, amount: u64) -> TxResult {
         self.b_mock.borrow_mut().execute_tx(
-            caller,
+            participant,
             &self.attacker_wrapper,
             &rust_biguint!(ONE_EGLD),
             |sc| {
-                sc.participate(lottery_sc_address.clone().into(), BigUint::from(amount));
+                sc.participate(participant.into(), lottery_sc_address.clone().into(), BigUint::from(amount));
             },
         )
     }
@@ -91,17 +91,17 @@ where
             })
     }
 
-    pub fn call_get_prize(
+    pub fn call_redeem_prize(
         &self,
-        caller: &Address,
+        participant: &Address,
         lottery_sc_address: &Address,
     ) -> TxResult {
         self.b_mock.borrow_mut().execute_tx(
-            caller,
+            participant,
             &self.attacker_wrapper,
             &rust_biguint!(0),
             |sc| {
-                sc.reedem_prize(lottery_sc_address.clone().into())
+                sc.redeem_prize(participant.into(), lottery_sc_address.clone().into())
             })
     }
 

@@ -24,7 +24,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         init => init
         participate => participate
         drawWinnerAndFail => attack_async
-        redeemPrize => reedem_prize
+        redeemPrize => redeem_prize
         drawWinner => draw_winner
         getLotteryScAddress => lottery_sc_address
     )

@@ -30,6 +30,7 @@ pub trait Lottery {
         for (index, participant) in self.participants().iter().enumerate() {
             if index == rand_index.try_into().unwrap() {
                 self.winner().set(participant.0);
+                self.is_executing().set(false);
                 break;
             }
         }
@@ -37,8 +38,7 @@ pub trait Lottery {
 
     #[payable("EGLD")]
     #[endpoint(participate)]
-    fn participate(&self) -> bool {
-        let caller = self.blockchain().get_caller();
+    fn participate(&self, participant: ManagedAddress) -> bool {
         let call_value = self.call_value().egld_value().clone_value();
         require!(
             !self.is_executing().get(),
@@ -51,31 +51,26 @@ pub trait Lottery {
         );
 
         require!(
-            !self.participants().contains_key(&caller),
+            !self.participants().contains_key(&participant),
             "You are allowed to participate only once"
         );
 
-        self.participants().insert(caller, call_value);
+        self.participants().insert(participant, call_value);
 
         return true;
     }
 
     #[payable("EGLD")]
     #[endpoint]
-    fn reedem_prize(&self) {
-        let caller = self.blockchain().get_caller();
+    fn redeem_prize(&self, participant: ManagedAddress) {
         require!(
             self.participants().is_empty() || !self.is_executing().get(),
             "The lottery is still in progress"
         );
+        require!(self.get_winner() != None, "There was no winner nomitated");
 
         require!(
-            self.get_winner() == None,
-            "There was no winner nomitated"
-        );
-
-        require!(
-            self.is_winner(&caller),
+            self.is_winner(&participant),
             "You are not the winner of the lottery"
         );
 
@@ -88,14 +83,14 @@ pub trait Lottery {
 
         self.participants().clear();
         self.is_executing().set(false);
-        self.send().direct_egld(&caller, &prize);
+        self.send().direct_egld(&participant, &prize);
     }
 
     fn calculate_prize(&self) -> BigUint {
         let mut prize: BigUint = BigUint::from(0u64);
 
         for participant in &self.participants() {
-            prize += participant.1 
+            prize += participant.1
         }
 
         return BigUint::from(prize);
@@ -104,7 +99,7 @@ pub trait Lottery {
     fn is_winner(&self, caller: &ManagedAddress) -> bool {
         match self.get_winner() {
             Some(ref winner_address) => winner_address == caller,
-            None => false
+            None => false,
         }
     }
 
