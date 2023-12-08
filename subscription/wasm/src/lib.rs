@@ -37,7 +37,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         addPair => add_pair
         removePair => remove_pair
         getSafePrice => get_safe_price
-        substractPayment => substract_payment
+        subtractPayment => subtract_payment
     )
 }
 

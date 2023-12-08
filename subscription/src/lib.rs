@@ -11,7 +11,7 @@ pub trait Subscription:
     payments::payments::PaymentsModule
     + service::ServiceModule
     + pair_actions::PairActionsModule
-    + payments::substract_payments::SubstractPaymentsModule
+    + payments::substract_payments::SubtractPaymentsModule
     //+ crate::ongoing_operation::OngoingOperationModule
 {
     #[init]

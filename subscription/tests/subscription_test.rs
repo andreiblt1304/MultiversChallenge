@@ -209,7 +209,7 @@ fn subscribe_multiple_ok_test() {
 }
 
 #[test]
-fn substract_ok_test() {
+fn subtract_ok_test() {
     let (b_mock_rc, pair_setup, mut sub_sc) = 
         init_all(|| pair_actions::contract_obj(), || subscription::contract_obj());
 
@@ -245,7 +245,7 @@ fn substract_ok_test() {
     b_mock_rc.borrow_mut().set_block_epoch(10);
 
     sub_sc
-        .call_substract_payment(&rand_service, 0, 1)
+        .call_subtract_payment(&rand_service, 0, 1)
         .assert_ok();
 
     b_mock_rc.borrow().check_esdt_balance(
@@ -291,7 +291,7 @@ fn try_subtract_twice_same_day() {
     b_mock_rc.borrow_mut().set_block_epoch(10);
 
     sub_sc
-        .call_substract_payment(&rand_service, 0, 1)
+        .call_subtract_payment(&rand_service, 0, 1)
         .assert_ok();
 
     b_mock_rc.borrow().check_esdt_balance(
@@ -301,8 +301,8 @@ fn try_subtract_twice_same_day() {
     );
 
     sub_sc
-        .call_substract_payment(&rand_service, 0, 1)
-        .assert_user_error("Cannot substract the payment yet");
+        .call_subtract_payment(&rand_service, 0, 1)
+        .assert_user_error("Cannot subtract the payment yet");
 
     b_mock_rc.borrow().check_esdt_balance(
         &rand_service,

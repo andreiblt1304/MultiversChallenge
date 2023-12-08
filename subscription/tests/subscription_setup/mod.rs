@@ -4,7 +4,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use multiversx_sc::{types::{MultiValueEncoded, EgldOrEsdtTokenIdentifier, Address, TokenIdentifier, ManagedAddress, BigUint}, codec::multi_types::{MultiValue3, MultiValue2}, storage::mappers::AddressId};
 use multiversx_sc_scenario::{testing_framework::{BlockchainStateWrapper, ContractObjWrapper, TxResult}, DebugApi, rust_biguint, managed_address, managed_token_id_wrapped, managed_biguint};
-use subscription::{self, Subscription, service::{ServiceModule, SubscriptionType}, payments::{payments::PaymentsModule, substract_payments::SubstractPaymentsModule}};
+use subscription::{self, Subscription, service::{ServiceModule, SubscriptionType}, payments::{payments::PaymentsModule, substract_payments::SubtractPaymentsModule}};
 
 pub struct SubscriptionSetup<SubscriptionObjBuilder>
 where
@@ -141,7 +141,7 @@ where
                 })
     }
 
-    pub fn call_substract_payment(
+    pub fn call_subtract_payment(
         &mut self,
         caller: &Address,
         service_index: usize,
@@ -154,7 +154,7 @@ where
                 &self.sub_wrapper,
                 &rust_biguint!(0),
             |sc| {
-                let _ = sc.substract_payment(service_index, user_id);
+                let _ = sc.subtract_payment(service_index, user_id);
             })
     }
 

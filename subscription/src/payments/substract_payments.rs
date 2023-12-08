@@ -39,13 +39,13 @@ impl<T: NestedEncode + NestedDecode + TypeAbi, E: NestedEncode + NestedDecode + 
 }
 
 #[multiversx_sc::module]
-pub trait SubstractPaymentsModule:
+pub trait SubtractPaymentsModule:
     crate::payments::payments::PaymentsModule
     + crate::service::ServiceModule
     + crate::pair_actions::PairActionsModule
 {
-    #[endpoint(substractPayment)]
-    fn substract_payment(
+    #[endpoint(subtractPayment)]
+    fn subtract_payment(
         &self,
         service_index: usize,
         user_id: AddressId
@@ -58,9 +58,9 @@ pub trait SubstractPaymentsModule:
         let last_action_epoch = last_action_mapper.get();
 
         if last_action_epoch > 0 {
-            let next_substract_epoch = last_action_epoch + MONTHLY_EPOCH;
+            let next_subtract_epoch = last_action_epoch + MONTHLY_EPOCH;
             
-            require!(next_substract_epoch <= current_epoch, "Cannot substract the payment yet");
+            require!(next_subtract_epoch <= current_epoch, "Cannot subtract the payment yet");
         }
         
         let opt_user_adddress = self.user_id().get_address(user_id);
@@ -79,14 +79,14 @@ pub trait SubstractPaymentsModule:
         };
 
         let service_info = self.service_info(service_id).get().get(service_index);
-        let substract_result = match service_info.opt_payment_token {
+        let subtract_result = match service_info.opt_payment_token {
             Some(token_id) => {
-                self.substract_specific_token(user_id, token_id, service_info.amount * multiplier)
+                self.subtract_specific_token(user_id, token_id, service_info.amount * multiplier)
             }
-            None => self.substract_any_token(user_id)
+            None => self.subtract_any_token(user_id)
         };
 
-        if let CustomScResult::Ok(payment) = &substract_result {
+        if let CustomScResult::Ok(payment) = &subtract_result {
             self.send().direct(
                 &caller,
                 &payment.token_identifier,
@@ -97,10 +97,10 @@ pub trait SubstractPaymentsModule:
 
         last_action_mapper.set(current_epoch);
 
-        substract_result
+        subtract_result
     }
 
-    fn substract_specific_token(
+    fn subtract_specific_token(
         &self,
         user_id: AddressId,
         token_id: EgldOrEsdtTokenIdentifier,
@@ -133,7 +133,7 @@ pub trait SubstractPaymentsModule:
         }
     }
 
-    fn substract_any_token(
+    fn subtract_any_token(
         &self,
         user_id: AddressId,
     ) -> CustomScResult<EgldOrEsdtTokenPayment, ()> {
