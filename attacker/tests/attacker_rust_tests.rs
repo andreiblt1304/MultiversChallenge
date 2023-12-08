@@ -3,7 +3,6 @@
 use std::{cell::RefCell, rc::Rc};
 
 use attacker_setup::{AttackerSetup, ONE_EGLD, TEN_EGLD};
-use multiversx_sc::{hex_literal, types::Address};
 use multiversx_sc_scenario::{rust_biguint, testing_framework::BlockchainStateWrapper, DebugApi};
 
 pub mod attacker_setup;
@@ -174,7 +173,11 @@ fn attack() {
         .assert_ok();
 
     attacker_sc
-        .call_attacker_async(&first_caller, &attacker_sc.lottery_address, first_amount_to_send)
+        .call_attacker_async(
+            &first_caller,
+            &attacker_sc.lottery_address,
+            first_amount_to_send,
+        )
         .assert_ok();
 
     let sc_balance_before_participating = b_mock_rc
@@ -185,8 +188,9 @@ fn attack() {
         .borrow()
         .get_egld_balance(&attacker_sc.lottery_address);
 
-    b_mock_rc
-        .borrow()
-        .check_egld_balance(&first_caller, &rust_biguint!(TEN_EGLD - ONE_EGLD - ONE_EGLD));
+    b_mock_rc.borrow().check_egld_balance(
+        &first_caller,
+        &rust_biguint!(TEN_EGLD - ONE_EGLD - ONE_EGLD),
+    );
     assert!(sc_balance_before_participating < sc_balance_after_participating);
 }

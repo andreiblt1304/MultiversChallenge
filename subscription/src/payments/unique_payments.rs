@@ -1,19 +1,22 @@
-use multiversx_sc::{types::{ManagedVec, EsdtTokenPayment}, api::ManagedTypeApi};
+use multiversx_sc::{
+    api::ManagedTypeApi,
+    types::{EsdtTokenPayment, ManagedVec},
+};
 
 pub type PaymentsVec<M> = ManagedVec<M, EsdtTokenPayment<M>>;
 
 multiversx_sc::derive_imports!();
 
 #[derive(TypeAbi, TopEncode, TopDecode, NestedEncode, NestedDecode, Clone, PartialEq, Debug)]
-pub struct  UniquePayments<M: ManagedTypeApi> {
-    payments: PaymentsVec<M>
+pub struct UniquePayments<M: ManagedTypeApi> {
+    payments: PaymentsVec<M>,
 }
 
 impl<M: ManagedTypeApi> Default for UniquePayments<M> {
     #[inline]
     fn default() -> Self {
         Self {
-            payments: PaymentsVec::new()
+            payments: PaymentsVec::new(),
         }
     }
 }
@@ -82,5 +85,4 @@ impl<M: ManagedTypeApi> UniquePayments<M> {
     pub fn into_payments(self) -> PaymentsVec<M> {
         self.payments
     }
-
 }

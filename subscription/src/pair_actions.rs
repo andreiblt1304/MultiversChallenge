@@ -1,4 +1,3 @@
-
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
@@ -18,47 +17,41 @@ pub mod pair_proxy {
 pub trait PairActionsModule {
     #[only_owner]
     #[endpoint(addPair)]
-    fn add_pair(
-        &self,
-        token_id: TokenIdentifier,
-        pair_address: ManagedAddress
-    ) {
+    fn add_pair(&self, token_id: TokenIdentifier, pair_address: ManagedAddress) {
         require!(token_id.is_valid_esdt_identifier(), "Invalid token ID");
         require!(
             self.blockchain().is_smart_contract(&pair_address),
             "Invalid pair address"
         );
-        
+
         self.pair_address_for_token(&token_id).set(pair_address);
     }
 
     #[only_owner]
     #[endpoint(removePair)]
-    fn remove_pair(
-        &self,
-        token_id: TokenIdentifier
-    ) {
+    fn remove_pair(&self, token_id: TokenIdentifier) {
         self.pair_address_for_token(&token_id).clear();
     }
 
     #[only_owner]
     #[endpoint(getSafePrice)]
-    fn get_safe_price(
-        &self,
-        token_id: TokenIdentifier,
-        amount: BigUint
-    ) -> BigUint {
+    fn get_safe_price(&self, token_id: TokenIdentifier, amount: BigUint) -> BigUint {
         let mapper = self.pair_address_for_token(&token_id);
-        
-        if mapper.is_empty() { return BigUint::zero() }
+
+        if mapper.is_empty() {
+            return BigUint::zero();
+        }
 
         let pair_address = mapper.get();
         let price_query_address = self.price_query_address().get();
         let safe_price: EsdtTokenPayment = self
             .pair_proxy(price_query_address)
-            .get_safe_price_by_default_offset(pair_address, EsdtTokenPayment::new(token_id, 0, amount))
+            .get_safe_price_by_default_offset(
+                pair_address,
+                EsdtTokenPayment::new(token_id, 0, amount),
+            )
             .execute_on_dest_context();
-    
+
         safe_price.amount
     }
 

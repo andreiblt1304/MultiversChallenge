@@ -15,7 +15,7 @@ pub enum SubscriptionType {
     None,
     Daily,
     Weekly,
-    Monthly
+    Monthly,
 }
 
 #[multiversx_sc::module]
@@ -24,8 +24,8 @@ pub trait ServiceModule: crate::payments::payments::PaymentsModule {
     fn register_service(
         &self,
         args: MultiValueEncoded<
-            MultiValue3<ManagedAddress, Option<EgldOrEsdtTokenIdentifier>, BigUint>
-        >
+            MultiValue3<ManagedAddress, Option<EgldOrEsdtTokenIdentifier>, BigUint>,
+        >,
     ) {
         require!(!args.is_empty(), "No arguments provided");
 
@@ -37,25 +37,18 @@ pub trait ServiceModule: crate::payments::payments::PaymentsModule {
 
         // may contain multiple services
         for arg in args {
-            let (
-                sc_address, 
-                opt_payment_token, 
-                amount
-            ) = arg.into_tuple();
+            let (sc_address, opt_payment_token, amount) = arg.into_tuple();
 
             require!(
-                self.blockchain().is_smart_contract(&sc_address) && 
-                !sc_address.is_zero(),
+                self.blockchain().is_smart_contract(&sc_address) && !sc_address.is_zero(),
                 "Invalid SC address"
             );
 
-            services.push(
-                ServiceInfo {
-                    sc_address,
-                    opt_payment_token,
-                    amount,
-                }
-            );
+            services.push(ServiceInfo {
+                sc_address,
+                opt_payment_token,
+                amount,
+            });
         }
 
         let service_id = self.service_id().insert_new(&service_address);
@@ -66,17 +59,13 @@ pub trait ServiceModule: crate::payments::payments::PaymentsModule {
     #[endpoint]
     fn subscribe(
         &self,
-        services: MultiValueEncoded<MultiValue3<AddressId, usize, SubscriptionType>>
+        services: MultiValueEncoded<MultiValue3<AddressId, usize, SubscriptionType>>,
     ) {
         let caller = self.blockchain().get_caller();
         let caller_id = self.user_id().get_id_non_zero(&caller);
-        
+
         for pair in services {
-            let (
-                service_id,
-                service_index,
-                subscription_type
-            ) = pair.into_tuple();
+            let (service_id, service_index, subscription_type) = pair.into_tuple();
             let service_options = self.service_info(service_id).get();
 
             require!(
@@ -99,32 +88,27 @@ pub trait ServiceModule: crate::payments::payments::PaymentsModule {
     }
 
     #[endpoint]
-    fn unsubscribe(
-        &self,
-        services: MultiValueEncoded<MultiValue2<AddressId, usize>>
-    )  {
-            let caller = self.blockchain().get_caller();
-            let caller_id = self.user_id().get_id_non_zero(&caller);
+    fn unsubscribe(&self, services: MultiValueEncoded<MultiValue2<AddressId, usize>>) {
+        let caller = self.blockchain().get_caller();
+        let caller_id = self.user_id().get_id_non_zero(&caller);
 
-            for pair in services {
-                let (service_id, service_index) = pair.into_tuple();
-                let service_options = self.service_info(service_id).get();
+        for pair in services {
+            let (service_id, service_index) = pair.into_tuple();
+            let service_options = self.service_info(service_id).get();
 
-                require!(
-                    service_index < service_options.len(),
-                    "Invalid service index"
-                );
+            require!(
+                service_index < service_options.len(),
+                "Invalid service index"
+            );
 
-                self
-                    .subscription_type(caller_id, service_id, service_index)
-                    .clear();
+            self.subscription_type(caller_id, service_id, service_index)
+                .clear();
 
-                let _ = self
-                    .subscribed_users(service_id, service_index)
-                    .swap_remove(&caller_id);
-            } 
+            let _ = self
+                .subscribed_users(service_id, service_index)
+                .swap_remove(&caller_id);
         }
-    
+    }
 
     #[storage_mapper("serviceId")]
     fn service_id(&self) -> AddressToIdMapper<Self::Api>;
@@ -156,5 +140,3 @@ pub trait ServiceModule: crate::payments::payments::PaymentsModule {
         service_index: usize,
     ) -> SingleValueMapper<SubscriptionType>;
 }
-
-

@@ -17,10 +17,10 @@ pub const MONTHLY_EPOCH: Epoch = 30;
 #[derive(Debug, PartialEq, Eq, Clone, TopDecode, TopEncode, TypeAbi)]
 pub enum CustomScResult<
     T: NestedEncode + NestedDecode + TypeAbi,
-    E: NestedEncode + NestedDecode + TypeAbi
+    E: NestedEncode + NestedDecode + TypeAbi,
 > {
     Ok(T),
-    Err(E)
+    Err(E),
 }
 
 impl<T: NestedEncode + NestedDecode + TypeAbi, E: NestedEncode + NestedDecode + TypeAbi>
@@ -48,7 +48,7 @@ pub trait SubtractPaymentsModule:
     fn subtract_payment(
         &self,
         service_index: usize,
-        user_id: AddressId
+        user_id: AddressId,
     ) -> CustomScResult<EgldOrEsdtTokenPayment, ()> {
         let caller = self.blockchain().get_caller();
         let service_id = self.service_id().get_id_non_zero(&caller);
@@ -59,23 +59,28 @@ pub trait SubtractPaymentsModule:
 
         if last_action_epoch > 0 {
             let next_subtract_epoch = last_action_epoch + MONTHLY_EPOCH;
-            
-            require!(next_subtract_epoch <= current_epoch, "Cannot subtract the payment yet");
+
+            require!(
+                next_subtract_epoch <= current_epoch,
+                "Cannot subtract the payment yet"
+            );
         }
-        
+
         let opt_user_adddress = self.user_id().get_address(user_id);
-        
+
         if opt_user_adddress.is_none() {
             return CustomScResult::Err(());
         }
 
-        let subscription_type = self.subscription_type(user_id, service_id, service_index).get();
+        let subscription_type = self
+            .subscription_type(user_id, service_id, service_index)
+            .get();
 
         let multiplier = match subscription_type {
             SubscriptionType::Daily => MONTHLY_EPOCH / DAILY_EPOCH,
             SubscriptionType::Weekly => MONTHLY_EPOCH / WEEKLY_EPOCH,
             SubscriptionType::Monthly => 1,
-            SubscriptionType::None => return CustomScResult::Err(())
+            SubscriptionType::None => return CustomScResult::Err(()),
         };
 
         let service_info = self.service_info(service_id).get().get(service_index);
@@ -83,7 +88,7 @@ pub trait SubtractPaymentsModule:
             Some(token_id) => {
                 self.subtract_specific_token(user_id, token_id, service_info.amount * multiplier)
             }
-            None => self.subtract_any_token(user_id)
+            None => self.subtract_any_token(user_id),
         };
 
         if let CustomScResult::Ok(payment) = &subtract_result {
@@ -91,7 +96,7 @@ pub trait SubtractPaymentsModule:
                 &caller,
                 &payment.token_identifier,
                 payment.token_nonce,
-                &payment.amount
+                &payment.amount,
             );
         }
 
@@ -104,7 +109,7 @@ pub trait SubtractPaymentsModule:
         &self,
         user_id: AddressId,
         token_id: EgldOrEsdtTokenIdentifier,
-        amount: BigUint
+        amount: BigUint,
     ) -> CustomScResult<EgldOrEsdtTokenPayment, ()> {
         if token_id.is_egld() {
             return self.user_deposited_egld(user_id).update(|value| {
@@ -117,7 +122,7 @@ pub trait SubtractPaymentsModule:
                 CustomScResult::Ok(EgldOrEsdtTokenPayment::new(
                     EgldOrEsdtTokenIdentifier::egld(),
                     0,
-                    amount
+                    amount,
                 ))
             });
         }
@@ -133,12 +138,9 @@ pub trait SubtractPaymentsModule:
         }
     }
 
-    fn subtract_any_token(
-        &self,
-        user_id: AddressId,
-    ) -> CustomScResult<EgldOrEsdtTokenPayment, ()> {
+    fn subtract_any_token(&self, user_id: AddressId) -> CustomScResult<EgldOrEsdtTokenPayment, ()> {
         let tokens_mapper = self.user_deposited_payments(user_id);
-        
+
         if tokens_mapper.is_empty() {
             return CustomScResult::Err(());
         }
@@ -146,7 +148,8 @@ pub trait SubtractPaymentsModule:
         let mut user_tokens = tokens_mapper.get().into_payments();
 
         for (index, mut payment) in user_tokens.iter().enumerate() {
-            let safe_price = self.get_safe_price(payment.token_identifier.clone(), payment.amount.clone());
+            let safe_price =
+                self.get_safe_price(payment.token_identifier.clone(), payment.amount.clone());
             let query_result = if safe_price == 0 {
                 Result::Err(())
             } else {
@@ -168,13 +171,11 @@ pub trait SubtractPaymentsModule:
             let _ = user_tokens.set(index, &payment);
             tokens_mapper.set(UniquePayments::new_from_unique_payments(user_tokens));
 
-            return CustomScResult::Ok(
-                EgldOrEsdtTokenPayment::new(
-                    EgldOrEsdtTokenIdentifier::esdt(payment.token_identifier),
-                    0,
-                    price
-                )
-            );
+            return CustomScResult::Ok(EgldOrEsdtTokenPayment::new(
+                EgldOrEsdtTokenIdentifier::esdt(payment.token_identifier),
+                0,
+                price,
+            ));
         }
 
         CustomScResult::Err(())

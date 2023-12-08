@@ -2,13 +2,20 @@
 
 use std::{cell::RefCell, rc::Rc};
 
-use multiversx_sc_scenario::{DebugApi, testing_framework::BlockchainStateWrapper, rust_biguint, managed_token_id, managed_address};
+use multiversx_sc_scenario::{
+    managed_address, managed_token_id, rust_biguint, testing_framework::BlockchainStateWrapper,
+    DebugApi,
+};
 use pair_setup::PairSetup;
-use subscription::{pair_actions::{self, PairActionsModule}, ContractObj, service::SubscriptionType};
+use subscription::{
+    pair_actions::{self, PairActionsModule},
+    service::SubscriptionType,
+    ContractObj,
+};
 use subscription_setup::SubscriptionSetup;
 
-mod subscription_setup;
 mod pair_setup;
+mod subscription_setup;
 
 static FIRST_TOKEN_ID: &[u8] = b"MYTOKEN-123456";
 static USDC_TOKEN_ID: &[u8] = b"USDC-123456";
@@ -16,14 +23,14 @@ static LP_TOKEN_ID: &[u8] = b"LPTOK-123456";
 
 fn init_all<
     PairObjBuilder: 'static + Copy + Fn() -> pair_actions::ContractObj<DebugApi>,
-    SubscriptionObjBuilder: 'static + Copy + Fn() -> subscription::ContractObj<DebugApi>
-> (
+    SubscriptionObjBuilder: 'static + Copy + Fn() -> subscription::ContractObj<DebugApi>,
+>(
     pair_builder: PairObjBuilder,
-    sub_builder: SubscriptionObjBuilder
+    sub_builder: SubscriptionObjBuilder,
 ) -> (
     Rc<RefCell<BlockchainStateWrapper>>,
     PairSetup<PairObjBuilder>,
-    SubscriptionSetup<SubscriptionObjBuilder>
+    SubscriptionSetup<SubscriptionObjBuilder>,
 ) {
     let b_mock = BlockchainStateWrapper::new();
     let b_mock_ref = RefCell::new(b_mock);
@@ -41,7 +48,7 @@ fn init_all<
         USDC_TOKEN_ID,
         LP_TOKEN_ID,
         1000000000,
-        2000000000
+        2000000000,
     );
 
     let sub_sc = SubscriptionSetup::new(
@@ -49,9 +56,8 @@ fn init_all<
         sub_builder,
         &owner,
         pair_setup.pair_wrapper.address_ref(),
-        vec![FIRST_TOKEN_ID.to_vec()]
+        vec![FIRST_TOKEN_ID.to_vec()],
     );
-
 
     b_mock_rc
         .borrow_mut()
@@ -60,15 +66,16 @@ fn init_all<
             &sub_sc.sub_wrapper,
             &rust_biguint!(0),
             |sc: ContractObj<DebugApi>| {
-            sc.add_pair(
-                managed_token_id!(FIRST_TOKEN_ID),
-                managed_address!(pair_setup.pair_wrapper.address_ref()),
-            );
-            sc.add_pair(
-                managed_token_id!(LP_TOKEN_ID),
-                managed_address!(pair_setup.pair_wrapper.address_ref())
-            )
-        })
+                sc.add_pair(
+                    managed_token_id!(FIRST_TOKEN_ID),
+                    managed_address!(pair_setup.pair_wrapper.address_ref()),
+                );
+                sc.add_pair(
+                    managed_token_id!(LP_TOKEN_ID),
+                    managed_address!(pair_setup.pair_wrapper.address_ref()),
+                )
+            },
+        )
         .assert_ok();
 
     (b_mock_rc, pair_setup, sub_sc)
@@ -76,37 +83,42 @@ fn init_all<
 
 #[test]
 fn init_test() {
-    let _ = init_all(|| pair_actions::contract_obj(), || subscription::contract_obj());
+    let _ = init_all(
+        || pair_actions::contract_obj(),
+        || subscription::contract_obj(),
+    );
 }
 
 #[test]
 fn register_service_test() {
-    let (b_mock_rc, pair_setup, mut sub_sc) = 
-        init_all(|| pair_actions::contract_obj(), || subscription::contract_obj());
-    
+    let (b_mock_rc, pair_setup, mut sub_sc) = init_all(
+        || pair_actions::contract_obj(),
+        || subscription::contract_obj(),
+    );
+
     let rust_zero = rust_biguint!(0);
 
-    let rand_service = b_mock_rc
-        .borrow_mut()
-        .create_user_account(&rust_zero);
-    
+    let rand_service = b_mock_rc.borrow_mut().create_user_account(&rust_zero);
+
     sub_sc
         .call_register_service(
             &rand_service,
             vec![(
                 pair_setup.pair_wrapper.address_ref().clone(),
                 Some(FIRST_TOKEN_ID.to_vec()),
-                1000
-            )]
+                1000,
+            )],
         )
         .assert_ok();
 }
 
 #[test]
 fn subscribe_before_deposit_test() {
-    let (b_mock_rc, pair_setup, mut sub_sc) = 
-        init_all(|| pair_actions::contract_obj(), || subscription::contract_obj());
-    
+    let (b_mock_rc, pair_setup, mut sub_sc) = init_all(
+        || pair_actions::contract_obj(),
+        || subscription::contract_obj(),
+    );
+
     let rust_zero = rust_biguint!(0);
 
     let rand_service = b_mock_rc.borrow_mut().create_user_account(&rust_zero);
@@ -117,24 +129,24 @@ fn subscribe_before_deposit_test() {
             vec![(
                 pair_setup.pair_wrapper.address_ref().clone(),
                 Some(FIRST_TOKEN_ID.to_vec()),
-                1000
-            )]
+                1000,
+            )],
         )
         .assert_ok();
 
     let user = b_mock_rc.borrow_mut().create_user_account(&rust_zero);
-    
+
     sub_sc
-        .call_subscribe(
-            &user,
-            vec![(1, 0, SubscriptionType::Daily)])
+        .call_subscribe(&user, vec![(1, 0, SubscriptionType::Daily)])
         .assert_user_error("Unknown address");
 }
 
 #[test]
 fn subscribe_single_ok_test() {
-    let (b_mock_rc, pair_setup, mut sub_sc) = 
-        init_all(|| pair_actions::contract_obj(), || subscription::contract_obj());
+    let (b_mock_rc, pair_setup, mut sub_sc) = init_all(
+        || pair_actions::contract_obj(),
+        || subscription::contract_obj(),
+    );
 
     let rust_zero = rust_biguint!(0);
 
@@ -146,8 +158,8 @@ fn subscribe_single_ok_test() {
             vec![(
                 pair_setup.pair_wrapper.address_ref().clone(),
                 Some(FIRST_TOKEN_ID.to_vec()),
-                1000
-            )]
+                1000,
+            )],
         )
         .assert_ok();
 
@@ -163,13 +175,15 @@ fn subscribe_single_ok_test() {
 
     sub_sc
         .call_subscribe(&user, vec![(1, 0, SubscriptionType::Daily)])
-        .assert_ok();    
+        .assert_ok();
 }
 
 #[test]
 fn subscribe_multiple_ok_test() {
-    let (b_mock_rc, pair_setup, mut sub_sc) = 
-        init_all(|| pair_actions::contract_obj(), || subscription::contract_obj());
+    let (b_mock_rc, pair_setup, mut sub_sc) = init_all(
+        || pair_actions::contract_obj(),
+        || subscription::contract_obj(),
+    );
 
     let rust_zero = rust_biguint!(0);
 
@@ -182,14 +196,14 @@ fn subscribe_multiple_ok_test() {
                 (
                     pair_setup.pair_wrapper.address_ref().clone(),
                     Some(FIRST_TOKEN_ID.to_vec()),
-                    1000
+                    1000,
                 ),
                 (
                     pair_setup.pair_wrapper.address_ref().clone(),
                     Some(LP_TOKEN_ID.to_vec()),
-                    2000
-                )
-            ]
+                    2000,
+                ),
+            ],
         )
         .assert_ok();
 
@@ -205,13 +219,15 @@ fn subscribe_multiple_ok_test() {
 
     sub_sc
         .call_subscribe(&user, vec![(1, 0, SubscriptionType::Daily)])
-        .assert_ok();    
+        .assert_ok();
 }
 
 #[test]
 fn subtract_ok_test() {
-    let (b_mock_rc, pair_setup, mut sub_sc) = 
-        init_all(|| pair_actions::contract_obj(), || subscription::contract_obj());
+    let (b_mock_rc, pair_setup, mut sub_sc) = init_all(
+        || pair_actions::contract_obj(),
+        || subscription::contract_obj(),
+    );
 
     let rust_zero = rust_biguint!(0);
 
@@ -223,8 +239,8 @@ fn subtract_ok_test() {
             vec![(
                 pair_setup.pair_wrapper.address_ref().clone(),
                 Some(FIRST_TOKEN_ID.to_vec()),
-                1000
-            )]
+                1000,
+            )],
         )
         .assert_ok();
 
@@ -240,7 +256,7 @@ fn subtract_ok_test() {
 
     sub_sc
         .call_subscribe(&user, vec![(1, 0, SubscriptionType::Daily)])
-        .assert_ok();    
+        .assert_ok();
 
     b_mock_rc.borrow_mut().set_block_epoch(10);
 
@@ -248,17 +264,17 @@ fn subtract_ok_test() {
         .call_subtract_payment(&rand_service, 0, 1)
         .assert_ok();
 
-    b_mock_rc.borrow().check_esdt_balance(
-        &rand_service,
-        FIRST_TOKEN_ID,
-        &rust_biguint!(30* 1000)
-    );
+    b_mock_rc
+        .borrow()
+        .check_esdt_balance(&rand_service, FIRST_TOKEN_ID, &rust_biguint!(30 * 1000));
 }
 
 #[test]
 fn try_subtract_twice_same_day() {
-    let (b_mock_rc, pair_setup, mut sub_sc) = 
-        init_all(|| pair_actions::contract_obj(), || subscription::contract_obj());
+    let (b_mock_rc, pair_setup, mut sub_sc) = init_all(
+        || pair_actions::contract_obj(),
+        || subscription::contract_obj(),
+    );
 
     let rust_zero = rust_biguint!(0);
 
@@ -313,8 +329,10 @@ fn try_subtract_twice_same_day() {
 
 #[test]
 fn withdraw_tokens_test() {
-    let (b_mock_rc, pair_setup, mut sub_sc) = 
-        init_all(|| pair_actions::contract_obj(), || subscription::contract_obj());
+    let (b_mock_rc, pair_setup, mut sub_sc) = init_all(
+        || pair_actions::contract_obj(),
+        || subscription::contract_obj(),
+    );
 
     let rust_zero = rust_biguint!(0);
 

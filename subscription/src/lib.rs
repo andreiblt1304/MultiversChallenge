@@ -1,8 +1,8 @@
 #![no_std]
 
+pub mod pair_actions;
 pub mod payments;
 pub mod service;
-pub mod pair_actions;
 
 multiversx_sc::imports!();
 
@@ -12,13 +12,12 @@ pub trait Subscription:
     + service::ServiceModule
     + pair_actions::PairActionsModule
     + payments::substract_payments::SubtractPaymentsModule
-    //+ crate::ongoing_operation::OngoingOperationModule
 {
     #[init]
     fn init(
         &self,
         price_query_address: ManagedAddress<Self::Api>,
-        accepted_tokens: MultiValueEncoded<Self::Api, EgldOrEsdtTokenIdentifier<Self::Api>>
+        accepted_tokens: MultiValueEncoded<Self::Api, EgldOrEsdtTokenIdentifier<Self::Api>>,
     ) {
         require!(
             self.blockchain().is_smart_contract(&price_query_address),

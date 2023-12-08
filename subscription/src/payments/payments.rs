@@ -5,7 +5,6 @@ multiversx_sc::derive_imports!();
 
 #[multiversx_sc::module]
 pub trait PaymentsModule {
-
     // admin action: whitelist tokens
     #[only_owner]
     #[endpoint(addAcceptedPaymentTokens)]
@@ -36,7 +35,7 @@ pub trait PaymentsModule {
         self.add_user_payment(
             caller_id,
             EgldOrEsdtTokenPayment::new(payment_token, 0, payment_amount),
-            self.user_deposited_payments(caller_id)
+            self.user_deposited_payments(caller_id),
         );
     }
 
@@ -44,8 +43,8 @@ pub trait PaymentsModule {
     #[endpoint(withdraw)]
     fn withdraw(
         &self,
-        tokens_to_withdraw: MultiValueEncoded<MultiValue2<EgldOrEsdtTokenIdentifier, BigUint>>
-    ) ->MultiValue2<BigUint, ManagedVec<EsdtTokenPayment>> {
+        tokens_to_withdraw: MultiValueEncoded<MultiValue2<EgldOrEsdtTokenIdentifier, BigUint>>,
+    ) -> MultiValue2<BigUint, ManagedVec<EsdtTokenPayment>> {
         let caller = self.blockchain().get_caller();
         let caller_id = self.user_id().get_id_non_zero(&caller);
 
@@ -60,7 +59,7 @@ pub trait PaymentsModule {
             if token_id.is_egld() {
                 let egld_mapper = self.user_deposited_egld(caller_id);
                 let user_egld_ammount = egld_mapper.get();
-                
+
                 if user_egld_ammount >= amount {
                     self.send().direct_egld(&caller, &amount);
                     egld_mapper.set(&user_egld_ammount - &amount);
@@ -77,9 +76,9 @@ pub trait PaymentsModule {
                     output_payments.push(EsdtTokenPayment::new(
                         token_id.unwrap_esdt(),
                         0,
-                        amount.clone()
+                        amount.clone(),
                     ));
-    
+
                     opt_found_index = Some(index);
                     break;
                 }
@@ -110,7 +109,7 @@ pub trait PaymentsModule {
         &self,
         caller_id: AddressId,
         payment: EgldOrEsdtTokenPayment,
-        mapper: SingleValueMapper<UniquePayments<Self::Api>>
+        mapper: SingleValueMapper<UniquePayments<Self::Api>>,
     ) {
         if payment.token_identifier.is_egld() {
             self.user_deposited_egld(caller_id)
@@ -121,7 +120,7 @@ pub trait PaymentsModule {
 
         if mapper.is_empty() {
             let user_payments = UniquePayments::<Self::Api>::new_from_unique_payments(
-                ManagedVec::from_single_item(payment.unwrap_esdt())
+                ManagedVec::from_single_item(payment.unwrap_esdt()),
             );
 
             mapper.set(&user_payments);
@@ -143,7 +142,7 @@ pub trait PaymentsModule {
     #[storage_mapper("userDepositedFees")]
     fn user_deposited_payments(
         &self,
-        user: AddressId
+        user: AddressId,
     ) -> SingleValueMapper<UniquePayments<Self::Api>>;
 
     #[view(getUserDepositedEgld)]

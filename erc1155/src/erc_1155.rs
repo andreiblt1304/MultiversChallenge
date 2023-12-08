@@ -11,19 +11,12 @@ mod deposit_info;
 #[multiversx_sc::contract]
 pub trait Erc1155 {
     #[init]
-    fn init(
-        &self,
-        accepted_tokens: MultiValueEncoded<EgldOrEsdtTokenIdentifier>
-    ) {
+    fn init(&self, accepted_tokens: MultiValueEncoded<EgldOrEsdtTokenIdentifier>) {
         self.add_accepted_tokens(accepted_tokens);
     }
 
     #[endpoint(createToken)]
-    fn create_token(
-        &self,
-        initial_supply: BigUint,
-        is_fungible: bool,
-    ) -> BigUint {
+    fn create_token(&self, initial_supply: BigUint, is_fungible: bool) -> BigUint {
         let big_uint_one = BigUint::from(1u32);
 
         let creator = self.blockchain().get_caller();
@@ -35,8 +28,7 @@ pub trait Erc1155 {
 
         if !is_fungible {
             self.set_owner_for_token_range(&type_id, &big_uint_one, &initial_supply, &creator);
-            self.last_valid_nft_type_id(&type_id)
-                .set(&initial_supply);
+            self.last_valid_nft_type_id(&type_id).set(&initial_supply);
         }
 
         self.last_valid_type_id().set(&type_id);
@@ -46,16 +38,19 @@ pub trait Erc1155 {
 
     #[endpoint]
     fn safe_transfer_from(
-        &self, 
+        &self,
         from: ManagedAddress,
         to: ManagedAddress,
         type_id: BigUint,
         value: BigUint,
-        data: &ManagedBuffer
+        data: &ManagedBuffer,
     ) {
         let caller = self.blockchain().get_caller();
 
-        require!(!to.is_zero(), "Tokens can't be trasfered to the zero address");
+        require!(
+            !to.is_zero(),
+            "Tokens can't be trasfered to the zero address"
+        );
         require!(self.is_valid_type_id(&type_id), "Token id is invalid");
         require!(
             caller == from || self.has_permission(&caller, &from).get(),
@@ -76,7 +71,7 @@ pub trait Erc1155 {
         to: ManagedAddress,
         type_id: BigUint,
         amount: BigUint,
-        data: &ManagedBuffer
+        data: &ManagedBuffer,
     ) {
         self.try_balance_fungible(&from, &type_id, &amount);
 
@@ -89,18 +84,17 @@ pub trait Erc1155 {
 
     #[endpoint]
     fn safe_transfer_from_non_fungible(
-        &self, 
+        &self,
         from: ManagedAddress,
         to: ManagedAddress,
         type_id: BigUint,
         nft_id: BigUint,
-        data: &ManagedBuffer
+        data: &ManagedBuffer,
     ) {
         self.try_balance_nonfungible(&from, &type_id, &nft_id);
 
         self.increase_balance(&to, &type_id, &BigUint::from(1u32));
         self.token_owner(&type_id, &nft_id).set(&to);
-
     }
 
     #[endpoint]
@@ -110,7 +104,7 @@ pub trait Erc1155 {
         to: ManagedAddress,
         type_ids: &ManagedVec<BigUint>,
         values: &ManagedVec<BigUint>,
-        data: ManagedBuffer
+        data: ManagedBuffer,
     ) {
         let caller = self.blockchain().get_caller();
 
@@ -131,19 +125,9 @@ pub trait Erc1155 {
 
         for (type_id, value) in type_ids.iter().zip(values.iter()) {
             if self.is_fungible(&type_id).get() {
-                self.batch_transfer_from_fungible(
-                    &from,
-                    &to,
-                    &type_id,
-                    &value
-                );
+                self.batch_transfer_from_fungible(&from, &to, &type_id, &value);
             } else {
-                self.batch_transfer_from_nonfugible(
-                    &from,
-                    &to,
-                    &type_id,
-                    &value
-                )
+                self.batch_transfer_from_nonfugible(&from, &to, &type_id, &value)
             }
         }
     }
@@ -178,7 +162,8 @@ pub trait Erc1155 {
         );
 
         let caller = self.blockchain().get_caller();
-        let balance = self.get_balance_mapper(&caller)
+        let balance = self
+            .get_balance_mapper(&caller)
             .get(&type_id)
             .unwrap_or_default();
 
@@ -191,25 +176,23 @@ pub trait Erc1155 {
     fn deposit(&self, address: Address) {
         let payments = self.call_value().all_esdt_transfers();
         for payment in payments.iter() {
-            require!(payment.amount > 0, "No payment");    
-            let (token_id,nonce, amount) = payment.into_tuple();
+            require!(payment.amount > 0, "No payment");
+            let (token_id, nonce, amount) = payment.into_tuple();
             self.increase_esdt_balance(self.deposited_tokens(&address), &amount);
-            self.send().direct_esdt(&ManagedAddress::from(&address), &token_id, nonce, &amount);
+            self.send()
+                .direct_esdt(&ManagedAddress::from(&address), &token_id, nonce, &amount);
         }
     }
 
     #[endpoint]
-    fn withdraw(
-        &self,
-        tokens_to_withdraw: MultiValueEncoded<EsdtTokenPayment>
-    ) {
+    fn withdraw(&self, tokens_to_withdraw: MultiValueEncoded<EsdtTokenPayment>) {
         let caller = self.blockchain().get_caller();
         let mut output_payments = ManagedVec::<Self::Api, EsdtTokenPayment<Self::Api>>::new();
         for token in tokens_to_withdraw {
             output_payments.push(EsdtTokenPayment::new(
                 token.token_identifier,
                 0,
-                token.amount.clone()
+                token.amount.clone(),
             ));
 
             self.send().direct_multi(&caller, &output_payments);
@@ -218,10 +201,7 @@ pub trait Erc1155 {
 
     #[only_owner]
     #[endpoint(addAcceptedTokens)]
-    fn add_accepted_tokens(
-        &self,
-        accepted_tokens: MultiValueEncoded<EgldOrEsdtTokenIdentifier>
-    ) {
+    fn add_accepted_tokens(&self, accepted_tokens: MultiValueEncoded<EgldOrEsdtTokenIdentifier>) {
         for token in accepted_tokens {
             require!(token.is_valid(), "Invalud token");
 
@@ -236,7 +216,7 @@ pub trait Erc1155 {
         to: &ManagedAddress,
         type_ids: &ManagedVec<BigUint>,
         values: &ManagedVec<BigUint>,
-        #[call_result] result: ManagedAsyncCallResult<()>
+        #[call_result] result: ManagedAsyncCallResult<()>,
     ) {
         let destination_addr = match result {
             ManagedAsyncCallResult::Ok(()) => to,
@@ -267,7 +247,7 @@ pub trait Erc1155 {
         &self,
         to: &ManagedAddress,
         type_id: &BigUint,
-        nft_id: &BigUint
+        nft_id: &BigUint,
     ) {
         self.increase_balance(to, type_id, &BigUint::from(1u32));
         self.token_owner(type_id, nft_id).set(to);
@@ -278,7 +258,7 @@ pub trait Erc1155 {
         from: &ManagedAddress,
         to: &ManagedAddress,
         type_id: &ManagedRef<BigUint>,
-        amount: &ManagedRef<BigUint>
+        amount: &ManagedRef<BigUint>,
     ) {
         self.try_balance_fungible(from, type_id, amount);
         self.increase_balance(to, type_id, amount);
@@ -289,7 +269,7 @@ pub trait Erc1155 {
         to: &ManagedAddress,
         from: &ManagedAddress,
         type_id: &ManagedRef<BigUint>,
-        nft_id: &ManagedRef<BigUint>
+        nft_id: &ManagedRef<BigUint>,
     ) {
         self.try_balance_nonfungible(from, type_id, nft_id);
 
@@ -301,7 +281,7 @@ pub trait Erc1155 {
         from: &ManagedAddress,
         to: &ManagedAddress,
         type_id: &BigUint,
-        amount: &BigUint
+        amount: &BigUint,
     ) {
         self.increase_balance(to, type_id, amount);
         self.decrease_balance(from, type_id, amount);
@@ -312,7 +292,7 @@ pub trait Erc1155 {
         type_id: &BigUint,
         start: &BigUint,
         end: &BigUint,
-        owner: &ManagedAddress
+        owner: &ManagedAddress,
     ) {
         let big_uint_one = BigUint::from(1u32);
         let mut nft_id = start.clone();
@@ -324,7 +304,8 @@ pub trait Erc1155 {
     }
 
     fn increase_balance(&self, owner: &ManagedAddress, type_id: &BigUint, amount: &BigUint) {
-        let mut balance = self.get_balance_mapper(owner)
+        let mut balance = self
+            .get_balance_mapper(owner)
             .get(type_id)
             .unwrap_or_default();
         balance += amount;
@@ -348,41 +329,26 @@ pub trait Erc1155 {
         balance_mapper.insert(type_id.clone(), value.clone());
     }
 
-    fn try_balance_fungible(
-        &self,
-        owner: &ManagedAddress, 
-        type_id: &BigUint,
-        amount: &BigUint 
-    ) {
-        let balance = 
-            self.get_balance_mapper(owner)
-                .get(type_id)
-                .unwrap_or_default();
+    fn try_balance_fungible(&self, owner: &ManagedAddress, type_id: &BigUint, amount: &BigUint) {
+        let balance = self
+            .get_balance_mapper(owner)
+            .get(type_id)
+            .unwrap_or_default();
 
         require!(amount > &0u32, "Must transfer more than 0");
         require!(amount <= &balance, "Not enough balance for it");
     }
 
-    fn get_balance_for_type_id(
-        &self,
-        owner: &ManagedAddress,
-        type_id: &BigUint
-    ) -> BigUint {
-        let balance = self.get_balance_mapper(owner)
+    fn get_balance_for_type_id(&self, owner: &ManagedAddress, type_id: &BigUint) -> BigUint {
+        let balance = self
+            .get_balance_mapper(owner)
             .get(type_id)
-            .unwrap_or_else(|| {
-                panic!("Error: Unable to retrieve balance for the given type ID")
-            });
+            .unwrap_or_else(|| panic!("Error: Unable to retrieve balance for the given type ID"));
 
         balance
     }
 
-    fn try_balance_nonfungible(
-        &self,
-        owner: &ManagedAddress,
-        type_id: &BigUint,
-        nft_id: &BigUint
-    ) {
+    fn try_balance_nonfungible(&self, owner: &ManagedAddress, type_id: &BigUint, nft_id: &BigUint) {
         require!(
             self.is_valid_nft_id(type_id, nft_id),
             "The Id for this NFT is not valid"
@@ -395,7 +361,8 @@ pub trait Erc1155 {
 
         let amount = BigUint::from(1u32);
         self.decrease_balance(owner, type_id, &amount);
-        self.token_owner(type_id, nft_id).set(&ManagedAddress::zero());
+        self.token_owner(type_id, nft_id)
+            .set(&ManagedAddress::zero());
     }
 
     fn is_valid_type_id(&self, type_id: &BigUint) -> bool {
@@ -425,7 +392,8 @@ pub trait Erc1155 {
 
     #[view(getTokenOwner)]
     #[storage_mapper("tokenOwner")]
-    fn token_owner(&self, type_id: &BigUint, nft_id: &BigUint) -> SingleValueMapper<ManagedAddress>;
+    fn token_owner(&self, type_id: &BigUint, nft_id: &BigUint)
+        -> SingleValueMapper<ManagedAddress>;
 
     #[storage_mapper("balanceOf")]
     fn get_balance_mapper(&self, owner: &ManagedAddress) -> MapMapper<BigUint, BigUint>;
@@ -440,11 +408,15 @@ pub trait Erc1155 {
 
     #[view(hasPermission)]
     #[storage_mapper("hasPermission")]
-    fn has_permission(&self, operator: &ManagedAddress, owner: &ManagedAddress) -> SingleValueMapper<bool>;
+    fn has_permission(
+        &self,
+        operator: &ManagedAddress,
+        owner: &ManagedAddress,
+    ) -> SingleValueMapper<bool>;
 
     #[storage_mapper("lastValidTypeId")]
     fn last_valid_type_id(&self) -> SingleValueMapper<BigUint>;
-    
+
     #[storage_mapper("lastValidNftTypeId")]
     fn last_valid_nft_type_id(&self, type_id: &BigUint) -> SingleValueMapper<BigUint>;
 
@@ -453,7 +425,8 @@ pub trait Erc1155 {
 
     #[view]
     #[storage_mapper("depositInfo")]
-    fn deposit_info(&self, depositor: &ManagedAddress) -> SingleValueMapper<DepositInfo<Self::Api>>;
+    fn deposit_info(&self, depositor: &ManagedAddress)
+        -> SingleValueMapper<DepositInfo<Self::Api>>;
 
     #[view(getAcceptedTokens)]
     #[storage_mapper("acceptedTokens")]
